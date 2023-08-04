@@ -1,0 +1,8 @@
+server:
+  port: 9000
+az:
+  rack: rack1
+  zone: zone1
+
+file:
+  basePath: E:\MinFSWrite
