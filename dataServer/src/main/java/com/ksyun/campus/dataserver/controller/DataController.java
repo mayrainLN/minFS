@@ -1,5 +1,7 @@
 package com.ksyun.campus.dataserver.controller;
 
+import com.ksyun.campus.dataserver.services.DataService;
+import dto.RestResult;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -7,8 +9,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.annotation.Resource;
+
 @RestController("/")
 public class DataController {
+    @Resource
+    DataService dataService;
     /**
      * 1、读取request content内容并保存在本地磁盘下的文件内
      * 2、同步调用其他ds服务的write，完成另外2副本的写入
@@ -18,8 +24,8 @@ public class DataController {
      * @return
      */
     @RequestMapping("write")
-    public ResponseEntity writeFile(@RequestHeader String fileSystem, @RequestParam String path){
-        return new ResponseEntity(HttpStatus.OK);
+    public RestResult writeFile(@RequestHeader String fileSystem, @RequestParam String path){
+        return null;
     }
 
     /**
@@ -29,8 +35,8 @@ public class DataController {
      * @return
      */
     @RequestMapping("read")
-    public ResponseEntity readFile(@RequestHeader String fileSystem, @RequestParam String path){
-        return new ResponseEntity(HttpStatus.OK);
+    public RestResult readFile(@RequestHeader String fileSystem, @RequestParam String path){
+        return null;
     }
  
     /**

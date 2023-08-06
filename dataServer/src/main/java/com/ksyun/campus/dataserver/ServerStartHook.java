@@ -1,11 +1,9 @@
 package com.ksyun.campus.dataserver;
 
 import cn.hutool.json.JSONUtil;
-import com.ksyun.campus.dataserver.util.ServerInfoUtil;
+import com.ksyun.campus.dataserver.util.DataServerInfoUtil;
 import dto.DataServerInstance;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.CreateMode;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +13,6 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -28,18 +25,17 @@ import java.nio.charset.StandardCharsets;
 @Component
 public class ServerStartHook implements ApplicationRunner {
     @Value("${file.basePath}")
-    private String basePath;  // 如：/data/
+    private String basePath;  // 文件的最顶层目录，如：/data/
 
     @Autowired
     private CuratorFramework client;
 
     @Resource
-    private ServerInfoUtil serverInfoUtil;
+    private DataServerInfoUtil serverInfoUtil;
 
-    // 父节点不存在则创建
+    // zk中存储dataSever信息的目录，父节点不存在则创建
     private String parentPath = "/dataServer";
 
-    public static final long  MAX_DATA_CAPACITY = 104857600L; // 默认每个dataServer只能存储100MB
     @Override
     public void run(ApplicationArguments args) throws Exception {
         log.info("服务Hook运行...");
@@ -48,10 +44,7 @@ public class ServerStartHook implements ApplicationRunner {
             client.create().creatingParentsIfNeeded().forPath(parentPath);
         }
 
-        File folder = new File(basePath);
-        long folderSizeBytes  = FileUtils.sizeOfDirectory(folder);
-        long restCapacity = MAX_DATA_CAPACITY - folderSizeBytes;
-        log.info("当前DataServer剩余容量: {}", restCapacity);
+        long restCapacity = serverInfoUtil.getRestCapacity();
 
         DataServerInstance instance = DataServerInstance.builder()
                 .ip(serverInfoUtil.getIp())
@@ -62,8 +55,9 @@ public class ServerStartHook implements ApplicationRunner {
                 .build();
 
         // 创建自动编号的临时顺序节点
-        String path = client.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL)
-                .forPath(parentPath + "/", JSONUtil.parse(instance).toString().getBytes(StandardCharsets.UTF_8));
+        String path = client.create().withMode(CreateMode.EPHEMERAL)
+                .forPath(parentPath +"/"+ instance.getIp() + ":" + instance.getPort(),
+                        JSONUtil.parse(instance).toString().getBytes(StandardCharsets.UTF_8));
 
         log.info("创建节点：{}", path);
         log.info("内容：{}", instance.toString());

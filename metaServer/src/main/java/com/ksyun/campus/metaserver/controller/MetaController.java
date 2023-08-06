@@ -1,5 +1,6 @@
 package com.ksyun.campus.metaserver.controller;
 
+import dto.RestResult;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -50,8 +51,8 @@ public class MetaController {
      * @return
      */
     @RequestMapping("open")
-    public ResponseEntity open(@RequestHeader String fileSystem,@RequestParam String path){
-        return new ResponseEntity(HttpStatus.OK);
+    public RestResult open(@RequestHeader String fileSystem, @RequestParam String path){
+        return new RestResult();
     }
 
     /**

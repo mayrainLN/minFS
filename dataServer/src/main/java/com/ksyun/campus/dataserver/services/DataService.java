@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,13 +26,40 @@ public class DataService {
      */
     public RestResult write(byte[] data, String dirPathString, String fileName) {
 
-        boolean localWriteRes = writeLocal(data, dirPathString, fileName);
+        boolean localWriteRes = writeLocalFile(data, dirPathString, fileName);
         //todo 写本地
         //todo 调用远程ds服务写接口，同步副本，已达到多副本数量要求
         //todo 选择策略，按照 az rack->zone 的方式选取，将三副本均分到不同的az下
         //todo 支持重试机制
         //todo 返回三副本位置
         return RestResult.fail();
+    }
+
+
+    public RestResult mkdir(String dirPathString) {
+
+        boolean res = mkLocalDir(dirPathString);
+
+        //todo 写本地
+        //todo 调用远程ds服务写接口，同步副本，已达到多副本数量要求
+        //todo 选择策略，按照 az rack->zone 的方式选取，将三副本均分到不同的az下
+        //todo 支持重试机制
+        //todo 返回三副本位置
+        return RestResult.fail();
+    }
+
+    private boolean mkLocalDir(String dirPathString) {
+        // base目录已经自带了'/'
+        if(dirPathString.startsWith("/") || dirPathString.startsWith("\\")){
+            dirPathString = dirPathString.substring(1);
+        }
+        File folder = new File(basePathString+dirPathString);
+        if (folder.mkdirs()) {
+            log.info("文件夹：{}创建成功", dirPathString);
+            return true;
+        }
+        System.out.println("文件夹：{}创建失败" + dirPathString);
+        return false;
     }
 
     public byte[] read(String path, int offset, int length) {
@@ -56,10 +84,11 @@ public class DataService {
         }
     }
 
-    private boolean writeLocal(byte[] data, String dirPathString, String fileName) {
+    private boolean writeLocalFile(byte[] data, String dirPathString, String fileName) {
         Path filePath;
         Path dirPath;
         if (dirPathString == null || dirPathString.isEmpty()) {
+            // 没有指定目录，写在base目录下
             filePath = Paths.get(basePathString, fileName);
             dirPath = Paths.get(basePathString);
         } else {

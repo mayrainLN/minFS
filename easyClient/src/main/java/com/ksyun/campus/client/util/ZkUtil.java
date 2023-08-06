@@ -11,7 +11,6 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class ZkUtil {
-
     private static final int SESSION_TIMEOUT = 5000;
     //    private static final String PASSWORD = "ln20010110";
 //    private static final String USERNAME = "root";
