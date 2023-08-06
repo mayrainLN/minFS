@@ -7,3 +7,12 @@ spring:
         core-size: 10
         max-size: 20
         queue-capacity: 1000
+
+#curator配置
+curator:
+  connectString: localhost:2181 # zookeeper 地址
+  retryCount: 1 # 重试次数
+  elapsedTimeMs: 2000 # 重试间隔时间
+  sessionTimeoutMs: 60000 # session超时时间
+  connectionTimeoutMs: 10000 # 连接超时时间
+
