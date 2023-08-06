@@ -1,4 +1,4 @@
-package com.ksyun.campus.dataserver.zk;
+package com.ksyun.campus.metaserver.zk;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * @author :MayRain
  * @version :1.0
- * @date :2023/8/5 16:04
+ * @date :2023/8/6 18:43
  * @description :
  */
 @Configuration

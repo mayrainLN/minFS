@@ -34,14 +34,14 @@ public class ServerStartHook implements ApplicationRunner {
     private DataServerInfoUtil serverInfoUtil;
 
     // zk中存储dataSever信息的目录，父节点不存在则创建
-    private String parentPath = "/dataServer";
+    private String DataServerInfoParentPath = "/MinFS/dataServerInfo";
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
         log.info("服务Hook运行...");
         // 检查目录
-        if (client.checkExists().forPath(parentPath) == null) {
-            client.create().creatingParentsIfNeeded().forPath(parentPath);
+        if (client.checkExists().forPath(DataServerInfoParentPath) == null) {
+            client.create().creatingParentsIfNeeded().forPath(DataServerInfoParentPath);
         }
 
         long restCapacity = serverInfoUtil.getRestCapacity();
@@ -56,7 +56,7 @@ public class ServerStartHook implements ApplicationRunner {
 
         // 创建自动编号的临时顺序节点
         String path = client.create().withMode(CreateMode.EPHEMERAL)
-                .forPath(parentPath +"/"+ instance.getIp() + ":" + instance.getPort(),
+                .forPath(DataServerInfoParentPath +"/"+ instance.getIp() + ":" + instance.getPort(),
                         JSONUtil.parse(instance).toString().getBytes(StandardCharsets.UTF_8));
 
         log.info("创建节点：{}", path);

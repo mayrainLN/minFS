@@ -43,9 +43,10 @@ public class DataServerInfoUtil {
 
     /**
      * 获取本DataServer实例真实的文件存储base路径
+     * 比如/data/10.1.2.116-9001/
      */
     public String getRealBasePath() {
-        return basePath+"/"+getIp()+"-"+getPort();
+        return basePath+"/"+getIp()+"-"+getPort()+"/";
     }
 
     /**

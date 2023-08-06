@@ -35,13 +35,12 @@ public class MetaController {
      * 保存文件写入成功后的元数据信息，包括文件path、size、三副本信息等
      * @param fileSystem
      * @param path
-     * @param offset
-     * @param length
      * @return
      */
     @RequestMapping("write")
-    public ResponseEntity commitWrite(@RequestHeader String fileSystem, @RequestParam String path, @RequestParam int offset, @RequestParam int length){
-        return new ResponseEntity(HttpStatus.OK);
+    public RestResult commitWrite(@RequestHeader String fileSystem, @RequestParam String path){
+
+        return null;
     }
 
     /**

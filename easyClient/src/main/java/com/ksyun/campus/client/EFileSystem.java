@@ -16,6 +16,7 @@ public class EFileSystem extends FileSystem {
         this.fileName = fileName;
     }
 
+    // 暂时只写path。包含fileSystem
     public FSInputStream open(String path) {
         return null;
     }
