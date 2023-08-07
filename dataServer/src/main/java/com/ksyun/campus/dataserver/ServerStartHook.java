@@ -3,6 +3,7 @@ package com.ksyun.campus.dataserver;
 import cn.hutool.json.JSONUtil;
 import com.ksyun.campus.dataserver.util.DataServerInfoUtil;
 import dto.DataServerInstance;
+import dto.PrefixConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.CreateMode;
@@ -34,7 +35,7 @@ public class ServerStartHook implements ApplicationRunner {
     private DataServerInfoUtil serverInfoUtil;
 
     // zk中存储dataSever信息的目录，父节点不存在则创建
-    private String DataServerInfoParentPath = "/MinFS/dataServerInfo";
+    private String DataServerInfoParentPath = PrefixConstants.ZK_PATH_DATA_SERVER_INFO;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {

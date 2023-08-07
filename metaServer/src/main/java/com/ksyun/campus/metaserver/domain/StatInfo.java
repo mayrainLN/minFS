@@ -37,16 +37,17 @@ public class StatInfo {
      * 内容数据的三副本索引
      */
     public List<ReplicaData> replicaData;
-//    @Override
-//    public String toString() {
-//        return "StatInfo{" +
-//                "path='" + path + '\'' +
-//                ", size=" + size +
-//                ", mtime=" + mtime +
-//                ", type=" + type +
-//                ", replicaData=" + replicaData +
-//                '}';
-//    }
+
+    @Override
+    public String toString() {
+        return "StatInfo{" +
+                "path='" + path + '\'' + ','+ '\n'+
+                "size=" + size +','+  '\n'+
+                "mtime=" + mtime +','+ '\n'+
+                "type=" + type +','+ '\n'+
+                "replicaData=" + replicaData +'\n'+
+                '}';
+    }
 }
 
 

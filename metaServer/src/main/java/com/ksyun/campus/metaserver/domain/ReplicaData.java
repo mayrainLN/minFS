@@ -22,4 +22,13 @@ public class ReplicaData {
 
     public ReplicaData() {
     }
+
+    @Override
+    public String toString() {
+        return "ReplicaData{" +
+                "id='" + id + '\'' +"\n"+
+                "dsNode='" + dsNode + '\'' +"\n"+
+                "path='" + path + '\'' +"\n"+
+                '}';
+    }
 }

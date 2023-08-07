@@ -100,12 +100,15 @@ public class MetaService {
         }
         String fileLogicPath = fileSystem + path;
         String targetMataDataPath = PrefixConstants.ZK_PATH_META_INFO + fileLogicPath;
-        String zNodePath = createNodeRecursively(targetMataDataPath, fileStateInfo);
-
-        log.info("创建节点：{}", zNodePath);
-        log.info("内容：{}", fileStateInfo.toString());
-
-        String s = JSONUtil.parse(fileStateInfo).toString();
+        if(client.checkExists().forPath(targetMataDataPath)== null){
+            // 没有元信息，说明是创建文件。创建元信息
+//            log.info("创建元数据：{}", fileStateInfo.toString());
+            String zNodePath = createNodeRecursively(targetMataDataPath, fileStateInfo);
+        }else{
+            // 修改元信息
+//            log.info("修改元数据：{}", fileStateInfo.toString());
+            client.setData().forPath(targetMataDataPath, JSONUtil.parse(fileStateInfo).toString().getBytes(StandardCharsets.UTF_8));
+        }
 
         return new ResponseEntity(HttpStatus.OK);
     }
