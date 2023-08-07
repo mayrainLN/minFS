@@ -1,38 +1,32 @@
 package com.ksyun.campus.metaserver.controller;
 
 import com.ksyun.campus.metaserver.client.DataServerClient;
-import com.ksyun.campus.metaserver.util.LoadBalanceUtil;
+
+import com.ksyun.campus.metaserver.services.MetaService;
 import dto.DataServerInstance;
 import dto.RestResult;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.InputStreamResource;
+import org.apache.curator.framework.CuratorFramework;
 import org.springframework.http.*;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.util.StreamUtils;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @RestController("/")
 @Slf4j
 public class MetaController {
     @Resource
-    LoadBalanceUtil loadBalanceUtil;
+    CuratorFramework client;
+
+    @Resource
+    MetaService metaService;
 
     @Resource
     DataServerClient dataServerClient;
@@ -43,17 +37,22 @@ public class MetaController {
     }
 
     /**
-     * 创建文件，主要是创建文件的元数据信息
+     * 1. 创建文件
+     * 2. 创建/修改文件的元数据信息
+     *
      * @param fileSystem
      * @param path
      * @return
      */
+    @SneakyThrows
     @RequestMapping("create")
     public ResponseEntity createFile(
             @RequestHeader(required = false) String fileSystem,
             @RequestParam("path") String path,
             @RequestParam("file") MultipartFile file){
-        List<DataServerInstance> dataServerInstances = loadBalanceUtil.loadBalance();
+
+        // 选择三个DataServer
+        List<DataServerInstance> dataServerInstances = metaService.pickDataServerToWrite();
 
         byte[] bytes = null;
         try {
@@ -63,15 +62,22 @@ public class MetaController {
             e.printStackTrace();
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
+
+        Map<DataServerInstance, String> pathMap = new HashMap<>();
         // 请求dataServer创建文件
         // TODO 创建文件这里可以并发请求，用Future接收。 可以用CountDownLatch
         for (DataServerInstance dataServerInstance : dataServerInstances) {
+            //TODO 支持重试机制
             ResponseEntity responseEntity = dataServerClient.writeFileToDataServer(dataServerInstance, fileSystem, path, file);
             if(responseEntity.getStatusCode()!=HttpStatus.OK){
                 return (ResponseEntity) ResponseEntity.internalServerError();
             }
+            pathMap.put(dataServerInstance, responseEntity.getBody().toString());
         }
-        return new ResponseEntity(HttpStatus.OK);
+
+        // 更新元数据
+        ResponseEntity updateMetaDataRes = metaService.updateMetaData(fileSystem, path, file, dataServerInstances, pathMap);
+        return updateMetaDataRes;
     }
 
     /**

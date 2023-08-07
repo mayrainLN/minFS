@@ -42,7 +42,7 @@ public class DataService {
      */
     public ResponseEntity readFile(String fileSystem, String path, int offset, int length) {
         // base目录已经自带了'/'
-        if(path.startsWith("/")){
+        if(path.startsWith(File.separator)){
             path = path.substring(1);
         }
         if (fileSystem == null){
@@ -58,39 +58,55 @@ public class DataService {
         return new ResponseEntity<>(resource, headers, HttpStatus.OK);
     }
 
-    /**
-     * @param fileSystem
-     * @param path
-     * @param data
-     * @return
-     */
-    public ResponseEntity writeFile(String fileSystem, String path, byte[] data) {
-        //todo 写本地
-        //todo 调用远程ds服务写接口，同步副本，已达到多副本数量要求
-        //todo 选择策略，按照 az rack->zone 的方式选取，将三副本均分到不同的az下
-        //todo 支持重试机制
-        //todo 返回三副本位置
-        boolean res = writeLocalFile(data, fileSystem, path);
-        if (!res){
-            return (ResponseEntity) ResponseEntity.badRequest();
-        }
-        return ResponseEntity.ok("文件写入成功");
-    }
+
 
     /**
-     * 为减少复杂度只支持覆盖写，不支持追加写、随机写
+     *
+     * // getRealBasePath：/data/
+     * // fileSystem：C/
+     * // fileLogicPath：txt/test.txt
      *
      * @param data
-     * @param dirPathString  目录路径，如：ks3/，如果是base目录下，传入空字符串或者null
-     * @param fileName 文件名，如：test.txt
+     * @param fileLogicPath 文件逻辑路径 如文件名为test.txt，文件逻辑路径为txt/test.txt
+     *                      不能以/开头
+     * @return
      */
-    public RestResult write(String dirPathString, String fileName,byte[] data) {
+    public ResponseEntity writeLocalFile(String fileSystem, String fileLogicPath, byte[] data) {
+        if(fileSystem==null){
+            fileSystem = "";
+        }
+        Path filePath;  // 文件全路径
+        Path dirPath; // 所属目录路径
+        if (fileSystem == null || fileSystem.isEmpty()) {
+            // 没有指定目录，写在base目录下
+            filePath = Paths.get(dataServerInfoUtil.getRealBasePath(), fileLogicPath);
+            dirPath = filePath.getParent();
+        } else {
+            // 指定了目录，写在指定目录下
+            filePath = Paths.get(dataServerInfoUtil.getRealBasePath(), fileSystem, fileLogicPath);
+            dirPath = filePath.getParent();
+        }
+        String absolutePath = filePath.toFile().getAbsolutePath();
 
-        boolean localWriteRes = writeLocalFile(data, dirPathString, fileName);
+        try {
+            // 文件夹不存在先创建文件夹
+            if(!Files.exists(dirPath)){
+                Files.createDirectories(dirPath);
+            }
+            // 覆盖写：如果文件已经存在，则先删除原文件
+            if (Files.exists(filePath)) {
+                Files.delete(filePath);
+            }
+            Files.write(filePath, data);
 
-        return RestResult.fail();
+            // 统一转换为Linux风格的路径
+            absolutePath = absolutePath.replace("\\", "/");
+            return ResponseEntity.ok(absolutePath);
+        } catch (IOException e) {
+            log.error("本地写入失败", e);
+            return (ResponseEntity) ResponseEntity.badRequest();
+        }
     }
-
 
     public ResponseEntity mkdir(String dirPathString) {
 
@@ -113,7 +129,7 @@ public class DataService {
      */
     private boolean mkLocalDir(String dirPathString) {
         // base目录已经自带了'/'
-        if(dirPathString.startsWith("/")){
+        if(dirPathString.startsWith(File.separator)){
             dirPathString = dirPathString.substring(1);
         }
         File folder = new File(dataServerInfoUtil.getRealBasePath()+dirPathString);
@@ -152,44 +168,7 @@ public class DataService {
         }
     }
 
-    /**
-     *
-     * @param data
-     * @param fileName 包含文件逻辑路径 如文件名为test.txt，文件逻辑路径为/txt/test.txt
-     * @return
-     */
-    private boolean writeLocalFile(byte[] data, String fileSystem, String fileName) {
-        Path filePath;  // 文件全路径
-        Path dirPath; // 所属目录路径
-        if (fileSystem == null || fileSystem.isEmpty()) {
-            // 没有指定目录，写在base目录下
-            log.info("111");
-            filePath = Paths.get(dataServerInfoUtil.getRealBasePath(), fileName);
-            dirPath = filePath.getParent();
-        } else {
-            log.info("222");
-            // 指定了目录，写在指定目录下
-            filePath = Paths.get(dataServerInfoUtil.getRealBasePath(), fileSystem, fileName);
-            dirPath = filePath.getParent();
-        }
 
-        try {
-            // 文件夹不存在先创建文件夹
-            log.info("文件夹路径：{}", dirPath);
-            if(!Files.exists(dirPath)){
-                Files.createDirectories(dirPath);
-            }
-            // 覆盖写：如果文件已经存在，则先删除原文件
-            if (Files.exists(filePath)) {
-                Files.delete(filePath);
-            }
-            Files.write(filePath, data);
-            return true;
-        } catch (IOException e) {
-            log.error("本地写入失败", e);
-            return false;
-        }
-    }
 
     /**
      * 写入文件后，要修改服务剩余容量

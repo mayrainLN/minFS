@@ -1,9 +1,6 @@
 package com.ksyun.campus.dataserver.controller;
 
 import com.ksyun.campus.dataserver.services.DataService;
-import com.ksyun.campus.dataserver.util.DataServerInfoUtil;
-import dto.RestResult;
-import dto.WriteFileRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +9,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import java.io.IOException;
-import java.io.InputStream;
 
 @RestController("/")
 @Slf4j
@@ -41,9 +37,14 @@ public class DataController {
             e.printStackTrace();
         }
         long size = file.getSize();
-        // TODO 同步更新当前dataServer容量
+        // TODO 同步更新当前ZK中的dataServer容量
         boolean res = dataService.updateCapacity(size);
-        return dataService.writeFile(fileSystem, path, bytes);
+
+        ResponseEntity responseEntity = dataService.writeLocalFile(fileSystem, path, bytes);
+        if(!responseEntity.getStatusCode().is2xxSuccessful()){
+            return (ResponseEntity) ResponseEntity.internalServerError();
+        }
+        return responseEntity;
     }
 
     @GetMapping("read")

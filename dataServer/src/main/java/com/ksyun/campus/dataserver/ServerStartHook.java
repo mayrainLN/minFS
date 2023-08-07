@@ -54,7 +54,6 @@ public class ServerStartHook implements ApplicationRunner {
                 .zone("zone1")
                 .build();
 
-        // 创建自动编号的临时顺序节点
         String path = client.create().withMode(CreateMode.EPHEMERAL)
                 .forPath(DataServerInfoParentPath +"/"+ instance.getIp() + ":" + instance.getPort(),
                         JSONUtil.parse(instance).toString().getBytes(StandardCharsets.UTF_8));

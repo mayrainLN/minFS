@@ -1,5 +1,6 @@
 package com.ksyun.campus.metaserver.domain;
 
+import dto.DataServerInstance;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -14,4 +15,11 @@ public class ReplicaData {
      * 那我们就存储为 /data/10.1.2.116-9000/test.txt
      */
     public String path;
+
+    public ReplicaData(DataServerInstance instance) {
+        this.dsNode = instance.getIp() + ":" + instance.getPort();
+    }
+
+    public ReplicaData() {
+    }
 }

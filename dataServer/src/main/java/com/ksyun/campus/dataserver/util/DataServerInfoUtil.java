@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.net.InetAddress;
 
 /**
  * @author :MayRain
@@ -46,7 +45,11 @@ public class DataServerInfoUtil {
      * 比如/data/10.1.2.116-9001/
      */
     public String getRealBasePath() {
-        return basePath+"/"+getIp()+"-"+getPort()+"/";
+        if(!basePath.endsWith(File.separator)) {
+            basePath += File.separator;
+        }
+        String realBasePath = basePath + getIp() + "-" + getPort() + File.separator;
+        return realBasePath;
     }
 
     /**
