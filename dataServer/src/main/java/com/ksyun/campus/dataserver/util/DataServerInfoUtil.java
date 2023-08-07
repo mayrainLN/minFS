@@ -32,9 +32,9 @@ public class DataServerInfoUtil {
 
     @SneakyThrows
     public String getIp() {
-        return InetAddress.getLocalHost().getHostAddress();
-        // 防止ipv4地址出意外，直接写本机吧
-//        return "localhost";
+//        return InetAddress.getLocalHost().getHostAddress();
+        // 防止ipv4地址出意外，直接写本机吧。最主要是ipv4可能会发生变化，不好测试
+        return "localhost";
     }
 
     public int getPort() {

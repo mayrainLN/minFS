@@ -31,7 +31,7 @@ public class LoadBalanceUtil {
      * 暂时只是根据剩余容量来选择
      * @return
      */
-    public List<DataServerInstance> writeLoadBalance() {
+    public List<DataServerInstance> loadBalance() {
         String basePath = "/MinFS/dataServerInfo";
         List<String> dataServerList = null;
         try {

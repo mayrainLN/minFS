@@ -3,13 +3,20 @@ package com.ksyun.campus.dataserver.services;
 import com.ksyun.campus.dataserver.util.DataServerInfoUtil;
 import dto.RestResult;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.curator.framework.CuratorFramework;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,6 +29,9 @@ public class DataService {
     @Resource
     DataServerInfoUtil dataServerInfoUtil;
 
+    @Resource
+    CuratorFramework client;
+
     /**
      * 在指定本地磁盘路径下，读取指定大小的内容后返回
      * @param fileSystem fileSystem，相当于namespace，来模拟多个volume，相当与C盘D盘
@@ -30,7 +40,7 @@ public class DataService {
      * @param length
      * @return
      */
-    public RestResult readFile(String fileSystem, String path, int offset, int length) {
+    public ResponseEntity readFile(String fileSystem, String path, int offset, int length) {
         // base目录已经自带了'/'
         if(path.startsWith("/")){
             path = path.substring(1);
@@ -41,9 +51,11 @@ public class DataService {
         String fullRealFilePath = dataServerInfoUtil.getRealBasePath() + fileSystem + "/" + path;
         byte[] data = read(fullRealFilePath, offset, length);
 
-        // 先把所有的文件都当做字符串吧
-        String dataString = Base64.getEncoder().encodeToString(data);
-        return RestResult.success().data(dataString);
+        InputStream inputStream = new ByteArrayInputStream(data);
+        InputStreamResource resource = new InputStreamResource(inputStream);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        return new ResponseEntity<>(resource, headers, HttpStatus.OK);
     }
 
     /**
@@ -52,7 +64,7 @@ public class DataService {
      * @param data
      * @return
      */
-    public RestResult writeFile(String fileSystem, String path, byte[] data) {
+    public ResponseEntity writeFile(String fileSystem, String path, byte[] data) {
         //todo 写本地
         //todo 调用远程ds服务写接口，同步副本，已达到多副本数量要求
         //todo 选择策略，按照 az rack->zone 的方式选取，将三副本均分到不同的az下
@@ -60,9 +72,9 @@ public class DataService {
         //todo 返回三副本位置
         boolean res = writeLocalFile(data, fileSystem, path);
         if (!res){
-            return RestResult.fail();
+            return (ResponseEntity) ResponseEntity.badRequest();
         }
-        return RestResult.success();
+        return ResponseEntity.ok("文件写入成功");
     }
 
     /**
@@ -80,11 +92,11 @@ public class DataService {
     }
 
 
-    public RestResult mkdir(String dirPathString) {
+    public ResponseEntity mkdir(String dirPathString) {
 
         boolean res = mkLocalDir(dirPathString);
         if(!res){
-            return RestResult.fail();
+            return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
         //todo 写本地
@@ -92,7 +104,7 @@ public class DataService {
         //todo 选择策略，按照 az rack->zone 的方式选取，将三副本均分到不同的az下
         //todo 支持重试机制
         //todo 返回三副本位置
-        return RestResult.fail();
+        return new ResponseEntity(HttpStatus.OK);
     }
 
     /**
@@ -143,25 +155,27 @@ public class DataService {
     /**
      *
      * @param data
-     * @param dirPathString 文件逻辑路径
-     * @param fileName
+     * @param fileName 包含文件逻辑路径 如文件名为test.txt，文件逻辑路径为/txt/test.txt
      * @return
      */
-    private boolean writeLocalFile(byte[] data, String dirPathString, String fileName) {
+    private boolean writeLocalFile(byte[] data, String fileSystem, String fileName) {
         Path filePath;  // 文件全路径
         Path dirPath; // 所属目录路径
-        if (dirPathString == null || dirPathString.isEmpty()) {
+        if (fileSystem == null || fileSystem.isEmpty()) {
             // 没有指定目录，写在base目录下
+            log.info("111");
             filePath = Paths.get(dataServerInfoUtil.getRealBasePath(), fileName);
-            dirPath = Paths.get(dataServerInfoUtil.getRealBasePath());
+            dirPath = filePath.getParent();
         } else {
+            log.info("222");
             // 指定了目录，写在指定目录下
-            filePath = Paths.get(dataServerInfoUtil.getRealBasePath(), dirPathString, fileName);
-            dirPath = Paths.get(dataServerInfoUtil.getRealBasePath(), dirPathString);
+            filePath = Paths.get(dataServerInfoUtil.getRealBasePath(), fileSystem, fileName);
+            dirPath = filePath.getParent();
         }
 
         try {
             // 文件夹不存在先创建文件夹
+            log.info("文件夹路径：{}", dirPath);
             if(!Files.exists(dirPath)){
                 Files.createDirectories(dirPath);
             }
@@ -175,5 +189,15 @@ public class DataService {
             log.error("本地写入失败", e);
             return false;
         }
+    }
+
+    /**
+     * 写入文件后，要修改服务剩余容量
+     * @param size
+     * @return
+     */
+    public boolean updateCapacity(long size) {
+        return false;
+        //TODO 由于是覆盖写，要分情况讨论：是覆盖还是新写入
     }
 }

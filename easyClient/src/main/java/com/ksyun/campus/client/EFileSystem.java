@@ -5,6 +5,7 @@ import com.ksyun.campus.client.domain.StatInfo;
 
 import java.util.List;
 
+// 文件相关的操作，都是以path开头
 public class EFileSystem extends FileSystem {
 
     private String fileName = "default";
@@ -41,6 +42,10 @@ public class EFileSystem extends FileSystem {
         return null;
     }
 
+    /**
+     * 老师原话：这个接口一定要实现出来
+     * @return
+     */
     public ClusterInfo getClusterInfo() {
         return null;
     }
