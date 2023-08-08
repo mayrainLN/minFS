@@ -58,8 +58,10 @@ public class DataController {
         //TODO 不只是写入文件要这样考虑，还有删除文件，甚至删除文件夹也是
 
         //TODO 真要做起来，还不如直接用100M - 根目录文件夹大小。缺点就是只适用于本题目。
-        dataServerInfo.setCapacity(dataServerInfo.getCapacity() - size);
-        dataService.updateMetaData(dataServerInfoPath, dataServerInfo);
+        //TODO 已完成: 直接修改元数据中本机剩余容量
+        long restCapacity = dataServerInfoUtil.getRestCapacity();
+        DataServerInstance newDataServerInfo = dataServerInfo.setCapacity(restCapacity);
+        dataService.updateMetaData(dataServerInfoPath, newDataServerInfo);
 
         ResponseEntity responseEntity = dataService.writeLocalFile(fileSystem, path, bytes);
         if(!responseEntity.getStatusCode().is2xxSuccessful()){
