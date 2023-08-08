@@ -17,5 +17,6 @@ public class StartHook implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
         log.info("MetaServer Hook运行...");
+        // TODO 启动时注册，主从结构
     }
 }

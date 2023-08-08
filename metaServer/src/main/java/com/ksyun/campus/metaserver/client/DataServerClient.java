@@ -11,7 +11,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.annotation.Resource;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Objects;
@@ -59,7 +58,7 @@ public class DataServerClient {
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         headers.set("fileSystem", fileSystem);
 
-        String targetUrl = "http://" + dataServerInstance.getIp() + ":" + dataServerInstance.getPort() + "/write";
+        String targetUrl = "http://" + dataServerInstance.getHost() + ":" + dataServerInstance.getPort() + "/write";
         RequestEntity<MultiValueMap<String, Object>> requestEntity = RequestEntity
                 .post(URI.create(targetUrl))
                 .headers(headers)
@@ -85,7 +84,7 @@ public class DataServerClient {
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         headers.set("fileSystem", fileSystem);
 
-        String targetUrl = "http://" + dataServerInstance.getIp() + ":" + dataServerInstance.getPort() + "/delete";
+        String targetUrl = "http://" + dataServerInstance.getHost() + ":" + dataServerInstance.getPort() + "/delete";
         RequestEntity<MultiValueMap<String, Object>> requestEntity = RequestEntity
                 .post(URI.create(targetUrl))
                 .headers(headers)

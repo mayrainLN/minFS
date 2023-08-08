@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.util.Collection;
 
 /**
  * @author :MayRain
@@ -20,7 +21,7 @@ public class DataServerInfoUtil {
     /**
      * 默认每个dataServer只能存储100MB
      */
-    public static final long  MAX_DATA_CAPACITY = 104857600L;
+    public static final int  MAX_DATA_CAPACITY = 104857600;
 
 
     @Value("${file.basePath}")
@@ -55,7 +56,7 @@ public class DataServerInfoUtil {
     /**
      * 获取本DataServer实例剩余容量
      */
-     public long getRestCapacity() {
+     public int getRestCapacity() {
         File folder = new File(getRealBasePath());
         if(!folder.exists()) {
             log.info("base目录不存在，创建目录: {}", folder.getAbsolutePath());
@@ -64,8 +65,31 @@ public class DataServerInfoUtil {
         long folderSizeBytes  = FileUtils.sizeOfDirectory(folder);
         long restCapacity = MAX_DATA_CAPACITY - folderSizeBytes;
         log.info("当前DataServer剩余容量: {}", restCapacity);
-        return restCapacity;
+        return (int)restCapacity;
     }
 
+    public int getUsedCapacity() {
+        File folder = new File(getRealBasePath());
+        if(!folder.exists()) {
+            log.info("base目录不存在，创建目录: {}", folder.getAbsolutePath());
+            folder.mkdirs();
+        }
+        long folderSizeBytes  = FileUtils.sizeOfDirectory(folder);
+        log.info("当前DataServer已使用容量: {}", folderSizeBytes);
+        return (int)folderSizeBytes;
+    }
+
+    public int getTotalFileNum(){
+        String baseFolderPath = this.getRealBasePath(); // 替换成实际的文件夹路径
+        File folder = new File(baseFolderPath);
+        Collection<File> files = FileUtils.listFiles(folder, null, true); // 递归地列出所有文件
+        int fileCount = 0;
+        for (File file : files) {
+            if (file.isFile()) {
+                fileCount++;
+            }
+        }
+        return fileCount;
+    }
 }
 

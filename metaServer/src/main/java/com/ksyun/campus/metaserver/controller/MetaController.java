@@ -127,7 +127,7 @@ public class MetaController {
             String host = dsNode.split(":")[0];
             int port = Integer.parseInt(dsNode.split(":")[1]);
             DataServerInstance dataServerInstance = DataServerInstance.builder()
-                    .ip(host)
+                    .host(host)
                     .port(port)
                     .build();
             dataServerClient.deleteFile(dataServerInstance, fileSystem, path);
@@ -179,7 +179,7 @@ public class MetaController {
             String host = dsNode.split(":")[0];
             int port = Integer.parseInt(dsNode.split(":")[1]);
             DataServerInstance dataServerInstance = DataServerInstance.builder()
-                    .ip(host)
+                    .host(host)
                     .port(port)
                     .build();
             dataServerInstances.add(dataServerInstance);

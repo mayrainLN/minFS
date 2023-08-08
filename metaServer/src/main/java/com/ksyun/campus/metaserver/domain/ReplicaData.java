@@ -17,7 +17,7 @@ public class ReplicaData {
     public String path;
 
     public ReplicaData(DataServerInstance instance) {
-        this.dsNode = instance.getIp() + ":" + instance.getPort();
+        this.dsNode = instance.getHost() + ":" + instance.getPort();
     }
 
     public ReplicaData() {

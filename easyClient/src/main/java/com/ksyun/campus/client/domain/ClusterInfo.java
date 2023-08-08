@@ -51,6 +51,7 @@ public class ClusterInfo {
             this.port = port;
         }
     }
+
     public class DataServerMsg{
         private String host;
         private int port;

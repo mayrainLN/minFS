@@ -45,18 +45,19 @@ public class ServerStartHook implements ApplicationRunner {
             client.create().creatingParentsIfNeeded().forPath(DataServerInfoParentPath);
         }
 
-        long restCapacity = serverInfoUtil.getRestCapacity();
 
         DataServerInstance instance = DataServerInstance.builder()
-                .ip(serverInfoUtil.getIp())
+                .host(serverInfoUtil.getIp())
                 .port(serverInfoUtil.getPort())
-                .capacity(restCapacity) // 默认每个dataServer只能存储100MB
+                .useCapacity(serverInfoUtil.getUsedCapacity())
+                .capacity(serverInfoUtil.MAX_DATA_CAPACITY) // 默认每个dataServer只能存储100MB
+                .fileTotal(serverInfoUtil.getTotalFileNum())
                 .rack("rack1")
                 .zone("zone1")
                 .build();
 
         String path = client.create().withMode(CreateMode.EPHEMERAL)
-                .forPath(DataServerInfoParentPath +"/"+ instance.getIp() + ":" + instance.getPort(),
+                .forPath(DataServerInfoParentPath +"/"+ instance.getHost() + ":" + instance.getPort(),
                         JSONUtil.parse(instance).toString().getBytes(StandardCharsets.UTF_8));
 
         log.info("创建节点：{}", path);

@@ -59,7 +59,7 @@ public class DataController {
 
         //TODO 真要做起来，还不如直接用100M - 根目录文件夹大小。缺点就是只适用于本题目。
         //TODO 已完成: 直接修改元数据中本机剩余容量
-        long restCapacity = dataServerInfoUtil.getRestCapacity();
+        int restCapacity = dataServerInfoUtil.getRestCapacity();
         DataServerInstance newDataServerInfo = dataServerInfo.setCapacity(restCapacity);
         dataService.updateMetaData(dataServerInfoPath, newDataServerInfo);
 
