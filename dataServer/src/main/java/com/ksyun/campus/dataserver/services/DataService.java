@@ -1,9 +1,16 @@
 package com.ksyun.campus.dataserver.services;
 
+import cn.hutool.Hutool;
+import cn.hutool.json.JSON;
+import cn.hutool.json.JSONUtil;
 import com.ksyun.campus.dataserver.util.DataServerInfoUtil;
+import dto.DataServerInstance;
+import dto.PrefixConstants;
 import dto.RestResult;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.zookeeper.data.Stat;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
@@ -17,6 +24,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -169,15 +177,10 @@ public class DataService {
     }
 
 
-
-    /**
-     * 写入文件后，要修改服务剩余容量
-     * @param size
-     * @return
-     */
-    public boolean updateCapacity(long size) {
-        return false;
-        //TODO 由于是覆盖写，要分情况讨论：是覆盖还是新写入
+    @SneakyThrows
+    public void updateMetaData(String ZKPath,DataServerInstance dataServerInstance) {
+        String dataServerInfoPath = PrefixConstants.ZK_PATH_DATA_SERVER_INFO + "/" + dataServerInfoUtil.getIp() + ":" + dataServerInfoUtil.getPort();
+        client.setData().forPath(ZKPath, JSONUtil.parse(dataServerInstance).toString().getBytes(StandardCharsets.UTF_8));
     }
 
     public ResponseEntity deleteLocalFile(String fileSystem, String path) {

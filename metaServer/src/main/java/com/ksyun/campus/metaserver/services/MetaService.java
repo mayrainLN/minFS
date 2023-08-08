@@ -1,6 +1,7 @@
 package com.ksyun.campus.metaserver.services;
 
 import cn.hutool.json.JSONUtil;
+import com.ksyun.campus.metaserver.client.DataServerClient;
 import com.ksyun.campus.metaserver.domain.FileType;
 import com.ksyun.campus.metaserver.domain.ReplicaData;
 import com.ksyun.campus.metaserver.domain.StatInfo;
@@ -16,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -24,6 +26,9 @@ import java.util.*;
 public class MetaService {
     @Resource
     private CuratorFramework client;
+
+    @Resource
+    DataServerClient dataServerClient;
 
     /**
      * 选出3个dataServer，返回DataServerInstance
@@ -75,7 +80,43 @@ public class MetaService {
         return new ArrayList<>(priorityQueue);
     }
 
-    public ResponseEntity updateMetaData(String fileSystem, String path, MultipartFile file, List<DataServerInstance> dataServerInstances, Map<DataServerInstance, String> pathMap) throws Exception {
+    /**
+     *
+     * @param dataServerInstances 副本所在的三个dataServer
+     * @param fileSystem
+     * @param path
+     * @param file 新文件
+     * @return
+     */
+    public ResponseEntity writeFileToDataServer(List<DataServerInstance> dataServerInstances,
+                                                String fileSystem,
+                                                String path,
+                                                MultipartFile file,
+                                                Map<DataServerInstance, String> pathMap) {
+        byte[] bytes = null;
+        try {
+            bytes = file.getBytes();
+        } catch (IOException e) {
+            log.error("文件内容读取错误");
+            e.printStackTrace();
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        }
+
+        // 请求dataServer创建文件
+        // TODO 创建文件这里可以并发请求，用Future接收。 可以用CountDownLatch
+        for (DataServerInstance dataServerInstance : dataServerInstances) {
+            //TODO 支持重试机制
+            ResponseEntity responseEntity = dataServerClient.writeFileToDataServer(dataServerInstance, fileSystem, path, file);
+            if(responseEntity.getStatusCode()!=HttpStatus.OK){
+                return (ResponseEntity) ResponseEntity.internalServerError();
+            }
+            pathMap.put(dataServerInstance, responseEntity.getBody().toString());
+        }
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
+    @SneakyThrows
+    public ResponseEntity updateMetaData(String fileSystem, String path, MultipartFile file, List<DataServerInstance> dataServerInstances, Map<DataServerInstance, String> pathMap) {
         if(fileSystem == null){
             fileSystem = "";
         }

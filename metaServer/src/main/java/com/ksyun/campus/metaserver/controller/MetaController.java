@@ -1,5 +1,6 @@
 package com.ksyun.campus.metaserver.controller;
 
+import cn.hutool.json.JSONUtil;
 import com.ksyun.campus.metaserver.client.DataServerClient;
 
 import com.ksyun.campus.metaserver.domain.ReplicaData;
@@ -19,7 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
-import java.io.IOException;
 import java.util.*;
 
 @RestController("/")
@@ -40,7 +40,7 @@ public class MetaController {
     }
 
     /**
-     * 1. 创建文件
+     * 1. 负载均衡创建文件 | 按照元信息中的路径重新创建文件
      * 2. 创建/修改文件的元数据信息
      * @param fileSystem
      * @param path
@@ -53,34 +53,49 @@ public class MetaController {
             @RequestParam("path") String path,
             @RequestParam("file") MultipartFile file){
 
-        // 选择三个DataServer
-        List<DataServerInstance> dataServerInstances = metaService.pickDataServerToWrite();
 
-        byte[] bytes = null;
-        try {
-            bytes = file.getBytes();
-        } catch (IOException e) {
-            log.error("文件内容读取错误");
-            e.printStackTrace();
-            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        if(fileSystem == null){
+            fileSystem = "";
+        }
+        String fileLogicPath = fileSystem + path;
+        String targetMataDataPath = PrefixConstants.ZK_PATH_META_INFO + fileLogicPath;
+        List<DataServerInstance> dataServerInstanceList = null;
+
+        /**
+         * 判断文件是否存在
+         */
+        if(client.checkExists().forPath(targetMataDataPath)!=null){
+            // 源文件存在,按照原路径修改源文件
+            byte[] bytes = client.getData().forPath(targetMataDataPath);
+            StatInfo statInfo = JSONUtil.toBean(new String(bytes), StatInfo.class);
+            List<ReplicaData> replicaDatas = statInfo.getReplicaData();
+            // 文件所在dataServer
+            dataServerInstanceList = this.getInstancesListFromRelicaDatas(replicaDatas);
+            log.info("文件已存在,即将修改文件");
+        }else{
+            // 源文件不存在,选出三个DataServer创建新文件
+            dataServerInstanceList = metaService.pickDataServerToWrite();
+            log.info("文件不存在,即将创建文件");
         }
 
+        /**
+         * 写入/修改文件
+         */
+        // 存储 dataServer 和 真实路径 的映射关系,写入/修改文件 的时候会同步更新pathMap
         Map<DataServerInstance, String> pathMap = new HashMap<>();
-        // 请求dataServer创建文件
-        // TODO 创建文件这里可以并发请求，用Future接收。 可以用CountDownLatch
-        for (DataServerInstance dataServerInstance : dataServerInstances) {
-            //TODO 支持重试机制
-            ResponseEntity responseEntity = dataServerClient.writeFileToDataServer(dataServerInstance, fileSystem, path, file);
-            if(responseEntity.getStatusCode()!=HttpStatus.OK){
-                return (ResponseEntity) ResponseEntity.internalServerError();
-            }
-            pathMap.put(dataServerInstance, responseEntity.getBody().toString());
+        ResponseEntity responseEntity = metaService.writeFileToDataServer(dataServerInstanceList, fileSystem, path, file,pathMap);
+        if(!responseEntity.getStatusCode().is2xxSuccessful()){
+            return (ResponseEntity) ResponseEntity.internalServerError();
         }
 
-        // 更新元数据
-        ResponseEntity updateMetaDataRes = metaService.updateMetaData(fileSystem, path, file, dataServerInstances, pathMap);
+        /**
+         * 写入/修改文件元数据
+         */
+        ResponseEntity updateMetaDataRes = metaService.updateMetaData(fileSystem, path, file, dataServerInstanceList, pathMap);
         return updateMetaDataRes;
     }
+
+
 
     /**
      * 创建目录
@@ -155,5 +170,20 @@ public class MetaController {
     @RequestMapping("shutdown")
     public void shutdownServer(){
         System.exit(-1);
+    }
+
+    private List<DataServerInstance>  getInstancesListFromRelicaDatas(List<ReplicaData> replicaDatas){
+        List<DataServerInstance> dataServerInstances = new ArrayList<>();
+        for (ReplicaData replicaData : replicaDatas) {
+            String dsNode = replicaData.getDsNode();// localhost:8000
+            String host = dsNode.split(":")[0];
+            int port = Integer.parseInt(dsNode.split(":")[1]);
+            DataServerInstance dataServerInstance = DataServerInstance.builder()
+                    .ip(host)
+                    .port(port)
+                    .build();
+            dataServerInstances.add(dataServerInstance);
+        }
+        return dataServerInstances;
     }
 }

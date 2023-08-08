@@ -28,6 +28,9 @@ public class DataServerClient {
     @Autowired
     RestTemplate restTemplate;
 
+    /**
+     * 写文件到指定的DataServer
+     */
     public ResponseEntity writeFileToDataServer(DataServerInstance dataServerInstance,
                                   String fileSystem,
                                   String path,
