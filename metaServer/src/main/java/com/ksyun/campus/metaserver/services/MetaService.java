@@ -140,7 +140,7 @@ public class MetaService {
             fileSystem = "";
         }
         String fileLogicPath = fileSystem + path;
-        String targetMataDataPath = PrefixConstants.ZK_PATH_META_INFO + fileLogicPath;
+        String targetMataDataPath = PrefixConstants.ZK_PATH_FILE_META_INFO + fileLogicPath;
         if(client.checkExists().forPath(targetMataDataPath)== null){
             // 没有元信息，说明是创建文件。创建元信息
 //            log.info("创建元数据：{}", fileStateInfo.toString());
@@ -185,7 +185,7 @@ public class MetaService {
      * @return
      */
     public StatInfo getFileMetaInfo(String path) {
-        String nodeFullPath = PrefixConstants.ZK_PATH_META_INFO + path;
+        String nodeFullPath = PrefixConstants.ZK_PATH_FILE_META_INFO + path;
         byte[] bytes = null;
         try {
             bytes = client.getData().forPath(nodeFullPath);

@@ -14,3 +14,6 @@ curator:
   elapsedTimeMs: 2000 # 重试间隔时间
   sessionTimeoutMs: 60000 # session超时时间
   connectionTimeoutMs: 10000 # 连接超时时间
+
+zookeeper:
+  addr: localhost:2181

@@ -58,7 +58,7 @@ public class MetaController {
             fileSystem = "";
         }
         String fileLogicPath = fileSystem + path;
-        String targetMataDataPath = PrefixConstants.ZK_PATH_META_INFO + fileLogicPath;
+        String targetMataDataPath = PrefixConstants.ZK_PATH_FILE_META_INFO + fileLogicPath;
         List<DataServerInstance> dataServerInstanceList = null;
 
         /**
@@ -133,7 +133,7 @@ public class MetaController {
             dataServerClient.deleteFile(dataServerInstance, fileSystem, path);
         }
 
-        path = PrefixConstants.ZK_PATH_META_INFO + path;
+        path = PrefixConstants.ZK_PATH_FILE_META_INFO + path;
         // TODO 删除元数据
         client.delete().forPath(path);
         return new ResponseEntity(HttpStatus.OK);
