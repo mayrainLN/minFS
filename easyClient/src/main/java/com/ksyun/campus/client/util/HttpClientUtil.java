@@ -53,4 +53,8 @@ public class HttpClientUtil {
                 .build();
         return httpClient;
     }
+
+    public static HttpClient defaultClient(){
+        return createHttpClient(HttpClientConfig.defaultConfig());
+    }
 }

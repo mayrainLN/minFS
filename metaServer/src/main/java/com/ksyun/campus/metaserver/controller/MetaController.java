@@ -8,7 +8,6 @@ import com.ksyun.campus.metaserver.domain.StatInfo;
 import com.ksyun.campus.metaserver.services.MetaService;
 import dto.DataServerInstance;
 import dto.PrefixConstants;
-import dto.RestResult;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
@@ -148,7 +147,7 @@ public class MetaController {
      * @return
      */
     @RequestMapping("write")
-    public RestResult commitWrite(@RequestHeader String fileSystem, @RequestParam String path){
+    public ResponseEntity commitWrite(@RequestHeader String fileSystem, @RequestParam String path){
 
         return null;
     }
@@ -160,8 +159,8 @@ public class MetaController {
      * @return
      */
     @RequestMapping("open")
-    public RestResult open(@RequestHeader String fileSystem, @RequestParam String path){
-        return new RestResult();
+    public ResponseEntity open(@RequestHeader String fileSystem, @RequestParam String path){
+        return null;
     }
 
     /**

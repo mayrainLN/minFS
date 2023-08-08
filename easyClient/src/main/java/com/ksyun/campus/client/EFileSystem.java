@@ -3,6 +3,7 @@ package com.ksyun.campus.client;
 import cn.hutool.json.JSONUtil;
 import com.ksyun.campus.client.domain.ClusterInfo;
 import com.ksyun.campus.client.domain.StatInfo;
+import com.ksyun.campus.client.util.ZkUtil;
 import dto.PrefixConstants;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +33,13 @@ public class EFileSystem extends FileSystem {
     }
 
     public FSOutputStream create(String path) {
-        return null;
+        if(!fileName.startsWith("/")){
+            fileName = "/" + fileName;
+        }
+        if(!path.startsWith("/")){
+            path = "/" + path;
+        }
+        return new FSOutputStream(fileName, path);
     }
 
     public boolean mkdir(String path) {
@@ -50,18 +57,7 @@ public class EFileSystem extends FileSystem {
     public List<StatInfo> listFileStats(String path) {
         return null;
     }
-
-    static CuratorFramework client;
-
-    static {
-        String zkConnectionString = "localhost:2181"; // 替换成实际的ZooKeeper连接字符串
-
-        client = CuratorFrameworkFactory.newClient(
-                zkConnectionString, new ExponentialBackoffRetry(1000, 3)
-        );
-
-        client.start();
-    }
+    
     /**
      * 老师原话：这个接口一定要实现出来
      * @return
@@ -70,23 +66,23 @@ public class EFileSystem extends FileSystem {
     public ClusterInfo getClusterInfo() {
         ClusterInfo clusterInfo = new ClusterInfo();
         List<ClusterInfo.DataServerMsg> dataServerMsgList = new ArrayList<>();
-        List<String> children = client.getChildren().forPath(PrefixConstants.ZK_PATH_DATA_SERVER_INFO);
+        List<String> children = ZkUtil.client().getChildren().forPath(PrefixConstants.ZK_PATH_DATA_SERVER_INFO);
 
         for (String child : children) {
             String childPath = PrefixConstants.ZK_PATH_DATA_SERVER_INFO + "/" + child;
-            byte[] childData = client.getData().forPath(childPath);
+            byte[] childData = ZkUtil.client().getData().forPath(childPath);
             String childDataString = new String(childData);
             dataServerMsgList.add(JSONUtil.toBean(childDataString, ClusterInfo.DataServerMsg.class));
         }
         clusterInfo.setDataServer(dataServerMsgList);
 
-        List<String> childNodeName = client.getChildren().forPath(PrefixConstants.ZK_PATH_META_SERVER_INFO);
+        List<String> childNodeName = ZkUtil.client().getChildren().forPath(PrefixConstants.ZK_PATH_META_SERVER_INFO);
         if(childNodeName.size() == 0){
             log.error("没有元数据服务器");
             return clusterInfo;
         }else if(childNodeName.size() == 1){
             String childPath = PrefixConstants.ZK_PATH_META_SERVER_INFO + "/" + childNodeName.get(0);
-            byte[] childData = client.getData().forPath(childPath);
+            byte[] childData = ZkUtil.client().getData().forPath(childPath);
             String childDataString = new String(childData);
             ClusterInfo.MetaServerMsg dataServerMsg = JSONUtil.toBean(childDataString, ClusterInfo.MetaServerMsg.class);
             clusterInfo.setMasterMetaServer(dataServerMsg);
@@ -102,13 +98,13 @@ public class EFileSystem extends FileSystem {
             }
 
             String masterPath = PrefixConstants.ZK_PATH_META_SERVER_INFO + "/" + masterNodeName;
-            byte[] masterData = client.getData().forPath(masterPath);
+            byte[] masterData = ZkUtil.client().getData().forPath(masterPath);
             String masterDataString = new String(masterData);
             ClusterInfo.MetaServerMsg masterDataServerMsg = JSONUtil.toBean(masterDataString, ClusterInfo.MetaServerMsg.class);
             clusterInfo.setMasterMetaServer(masterDataServerMsg);
 
             String slavePath = PrefixConstants.ZK_PATH_META_SERVER_INFO + "/" + slaveNodeName;
-            byte[] slaveData = client.getData().forPath(slavePath);
+            byte[] slaveData = ZkUtil.client().getData().forPath(slavePath);
             String slaveDataString = new String(slaveData);
             ClusterInfo.MetaServerMsg slaveDataServerMsg = JSONUtil.toBean(slaveDataString, ClusterInfo.MetaServerMsg.class);
             clusterInfo.setSlaveMetaServer(slaveDataServerMsg);

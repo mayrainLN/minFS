@@ -63,6 +63,9 @@ public class DataController {
         DataServerInstance newDataServerInfo = dataServerInfo.setCapacity(restCapacity);
         dataService.updateMetaData(dataServerInfoPath, newDataServerInfo);
 
+        /**
+         * 在本机写入文件
+         */
         ResponseEntity responseEntity = dataService.writeLocalFile(fileSystem, path, bytes);
         if(!responseEntity.getStatusCode().is2xxSuccessful()){
             return (ResponseEntity) ResponseEntity.internalServerError();

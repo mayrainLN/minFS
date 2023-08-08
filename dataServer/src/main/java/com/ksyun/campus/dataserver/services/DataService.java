@@ -1,17 +1,11 @@
 package com.ksyun.campus.dataserver.services;
 
-import cn.hutool.Hutool;
-import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.ksyun.campus.dataserver.util.DataServerInfoUtil;
 import dto.DataServerInstance;
-import dto.PrefixConstants;
-import dto.RestResult;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.zookeeper.data.Stat;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -28,7 +22,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Base64;
 
 @Service
 @Slf4j
@@ -179,7 +172,6 @@ public class DataService {
 
     @SneakyThrows
     public void updateMetaData(String ZKPath,DataServerInstance dataServerInstance) {
-        String dataServerInfoPath = PrefixConstants.ZK_PATH_DATA_SERVER_INFO + "/" + dataServerInfoUtil.getIp() + ":" + dataServerInfoUtil.getPort();
         client.setData().forPath(ZKPath, JSONUtil.parse(dataServerInstance).toString().getBytes(StandardCharsets.UTF_8));
     }
 

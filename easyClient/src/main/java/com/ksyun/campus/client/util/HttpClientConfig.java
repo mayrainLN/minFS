@@ -90,4 +90,13 @@ public class HttpClientConfig {
 		this.maxRetry = maxRetry;
 		return this;
 	}
+
+	public static HttpClientConfig defaultConfig(){
+		HttpClientConfig defaultConfig = new HttpClientConfig()
+				.withConnectionTimeOut(30 * 1000)
+				.withMaxRetry(3)
+				.withMaxConnections(100)
+				.withSocketTimeOut(30 * 1000);
+		return defaultConfig;
+	}
 }
