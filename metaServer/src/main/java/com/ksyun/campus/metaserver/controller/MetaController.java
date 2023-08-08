@@ -2,8 +2,11 @@ package com.ksyun.campus.metaserver.controller;
 
 import com.ksyun.campus.metaserver.client.DataServerClient;
 
+import com.ksyun.campus.metaserver.domain.ReplicaData;
+import com.ksyun.campus.metaserver.domain.StatInfo;
 import com.ksyun.campus.metaserver.services.MetaService;
 import dto.DataServerInstance;
+import dto.PrefixConstants;
 import dto.RestResult;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +42,6 @@ public class MetaController {
     /**
      * 1. 创建文件
      * 2. 创建/修改文件的元数据信息
-     *
      * @param fileSystem
      * @param path
      * @return
@@ -96,8 +98,29 @@ public class MetaController {
         return new ResponseEntity(HttpStatus.OK);
     }
 
+    @SneakyThrows
     @RequestMapping("delete")
-    public ResponseEntity delete(@RequestHeader String fileSystem, @RequestParam String path){
+    public ResponseEntity delete(@RequestHeader(required = false) String fileSystem, @RequestParam String path){
+        if(fileSystem == null){
+            fileSystem = "";
+        }
+        path+=fileSystem;
+        StatInfo fileMetaInfo = metaService.getFileMetaInfo(path);
+        // 删除数据
+        for (ReplicaData replicaData : fileMetaInfo.getReplicaData()) {
+            String dsNode = replicaData.getDsNode();// localhost:8000
+            String host = dsNode.split(":")[0];
+            int port = Integer.parseInt(dsNode.split(":")[1]);
+            DataServerInstance dataServerInstance = DataServerInstance.builder()
+                    .ip(host)
+                    .port(port)
+                    .build();
+            dataServerClient.deleteFile(dataServerInstance, fileSystem, path);
+        }
+
+        path = PrefixConstants.ZK_PATH_META_INFO + path;
+        // TODO 删除元数据
+        client.delete().forPath(path);
         return new ResponseEntity(HttpStatus.OK);
     }
 

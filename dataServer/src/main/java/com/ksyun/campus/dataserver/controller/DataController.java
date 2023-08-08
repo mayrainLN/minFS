@@ -47,6 +47,12 @@ public class DataController {
         return responseEntity;
     }
 
+    @RequestMapping("delete")
+    public ResponseEntity deleteFile(@RequestHeader(required = false) String fileSystem,
+                                    @RequestParam("path") String path) {
+        return dataService.deleteLocalFile(fileSystem, path);
+    }
+
     @GetMapping("read")
     public ResponseEntity readFile(@RequestHeader(required = false) String fileSystem, @RequestParam String path, @RequestParam int offset, @RequestParam int length) {
         return dataService.readFile(fileSystem, path, offset, length);

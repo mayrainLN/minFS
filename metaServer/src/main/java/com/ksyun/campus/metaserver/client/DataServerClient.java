@@ -70,4 +70,31 @@ public class DataServerClient {
         return responseEntity;
     }
 
+    public ResponseEntity deleteFile(DataServerInstance dataServerInstance,
+                                     String fileSystem,
+                                     String path){
+
+        MultiValueMap<String, Object> formData = new LinkedMultiValueMap<>();
+        formData.add("path", path);
+
+        HttpHeaders headers = new HttpHeaders();
+
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        headers.set("fileSystem", fileSystem);
+
+        String targetUrl = "http://" + dataServerInstance.getIp() + ":" + dataServerInstance.getPort() + "/delete";
+        RequestEntity<MultiValueMap<String, Object>> requestEntity = RequestEntity
+                .post(URI.create(targetUrl))
+                .headers(headers)
+                .body(formData);
+
+        // 发送formData格式的请求
+        ResponseEntity<String> responseEntity = restTemplate.exchange(
+                requestEntity,
+                String.class
+        );
+
+        return responseEntity;
+    }
+
 }

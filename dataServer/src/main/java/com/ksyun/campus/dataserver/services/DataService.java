@@ -179,4 +179,28 @@ public class DataService {
         return false;
         //TODO 由于是覆盖写，要分情况讨论：是覆盖还是新写入
     }
+
+    public ResponseEntity deleteLocalFile(String fileSystem, String path) {
+        if(fileSystem==null){
+            fileSystem = "";
+        }
+        Path filePath;  // 文件全路径
+        Path dirPath; // 所属目录路径
+        if (fileSystem == null || fileSystem.isEmpty()) {
+            // 没有指定目录，写在base目录下
+            filePath = Paths.get(dataServerInfoUtil.getRealBasePath(), path);
+            dirPath = filePath.getParent();
+        } else {
+            // 指定了目录，写在指定目录下
+            filePath = Paths.get(dataServerInfoUtil.getRealBasePath(), fileSystem,path);
+            dirPath = filePath.getParent();
+        }
+        File file = filePath.toFile();
+
+        // 这里保持幂等
+        if(file.exists()){
+            file.delete();
+        }
+        return new ResponseEntity(HttpStatus.OK);
+    }
 }

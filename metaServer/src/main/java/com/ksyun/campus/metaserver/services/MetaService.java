@@ -137,4 +137,20 @@ public class MetaService {
         }
         return null;
     }
+
+    /**
+     *
+     * @param path 以/开头
+     * @return
+     */
+    public StatInfo getFileMetaInfo(String path) {
+        String nodeFullPath = PrefixConstants.ZK_PATH_META_INFO + path;
+        byte[] bytes = null;
+        try {
+            bytes = client.getData().forPath(nodeFullPath);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return JSONUtil.toBean(new String(bytes), StatInfo.class);
+    }
 }
