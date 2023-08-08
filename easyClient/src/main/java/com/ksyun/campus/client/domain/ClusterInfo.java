@@ -31,6 +31,15 @@ public class ClusterInfo {
         this.dataServer = dataServer;
     }
 
+    @Override
+    public String toString() {
+        return "ClusterInfo{" +
+                "masterMetaServer=" + masterMetaServer +
+                ", slaveMetaServer=" + slaveMetaServer +
+                ", dataServer=" + dataServer +
+                '}';
+    }
+
     public class MetaServerMsg{
         private String host;
         private int port;
@@ -49,6 +58,14 @@ public class ClusterInfo {
 
         public void setPort(int port) {
             this.port = port;
+        }
+
+        @Override
+        public String toString() {
+            return "MetaServerMsg{" +
+                    "host='" + host + '\'' +
+                    ", port=" + port +
+                    '}';
         }
     }
 
@@ -98,14 +115,16 @@ public class ClusterInfo {
         public void setUseCapacity(int useCapacity) {
             this.useCapacity = useCapacity;
         }
-    }
 
-    @Override
-    public String toString() {
-        return "ClusterInfo{" +
-                "masterMetaServer=" + masterMetaServer +
-                ", slaveMetaServer=" + slaveMetaServer +
-                ", dataServer=" + dataServer +
-                '}';
+        @Override
+        public String toString() {
+            return "DataServerMsg{" +
+                    "host='" + host + '\'' +
+                    ", port=" + port +
+                    ", fileTotal=" + fileTotal +
+                    ", capacity=" + capacity +
+                    ", useCapacity=" + useCapacity +
+                    '}';
+        }
     }
 }

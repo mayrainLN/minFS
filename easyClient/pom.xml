@@ -30,5 +30,11 @@
             <artifactId>logback-classic</artifactId>
             <version>1.2.6</version> <!-- 适合您的版本 -->
         </dependency>
+
+        <dependency>
+            <groupId>com.ksyun</groupId>
+            <artifactId>common</artifactId>
+            <version>1.0</version>
+        </dependency>
     </dependencies>
 </project>
