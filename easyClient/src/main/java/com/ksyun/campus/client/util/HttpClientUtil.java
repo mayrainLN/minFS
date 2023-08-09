@@ -69,11 +69,11 @@ public class HttpClientUtil {
     /**
      *
      * @param url 不包含http前缀、host和端口
-     * @param formDatas 其中的path应当是完整的逻辑路径(包含fileSystem)
+     * @param formDatas 其中的path应当是完整的逻辑路径，包含fileSystem，所以不用设置FileSystem了
      * @return
      */
     @SneakyThrows
-    public static HttpResponse sendPost(String url, Map<String,Object> formDatas){
+    public static HttpResponse sendPostToMetaServer(String url, Map<String,Object> formDatas){
         String metaServerMasterAddr = ZkUtil.getMetaServerMasterAddr();
         HttpClient httpClient = HttpClientUtil.defaultClient();
         HttpPost httpPost = new HttpPost("http://"+metaServerMasterAddr+url);
@@ -85,7 +85,7 @@ public class HttpClientUtil {
             entityBuilder.addTextBody("path", (String) path, ContentType.TEXT_PLAIN);
         }
         Object file = formDatas.get("file");
-        if(path!= null){
+        if(file!= null){
             ByteArrayBody byteArrayBody = new ByteArrayBody((byte[]) file, ContentType.APPLICATION_OCTET_STREAM, "tempFileName");
             entityBuilder.addPart("file", byteArrayBody);
         }
