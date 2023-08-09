@@ -80,7 +80,10 @@ public class ZkUtil {
         client.start();
     }
 
-    // 监听MetaServer主节点，如果主节点挂掉，重新选举
+    /**
+     * 监听主节点，主节点挂掉后，重新获取新的主节点，并监听新的主节点
+     * @param nodePath
+     */
     private static void addMasterListener(String nodePath) throws Exception{
         client.getData().usingWatcher((Watcher) event -> {
             try {
@@ -98,7 +101,9 @@ public class ZkUtil {
                         /**
                          * 在这里更新本地节点值
                          */
+                        log.info("监听到MetaServer Master掉线");
                         metaServerMsg = JSONUtil.toBean(new String(client.getData().forPath(newMinNodePath)), ClusterInfo.MetaServerMsg.class);
+                        log.info("已经切换新的MetaServer Master为：" + metaServerMsg.getHost() + ":" + metaServerMsg.getPort());
                         // 启动新节点的删除监听器
                         addMasterListener(newMinNodePath);
                     } else {
