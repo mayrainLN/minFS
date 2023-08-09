@@ -21,7 +21,9 @@ import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpResponse;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 // 文件相关的操作，都是以path开头
@@ -42,6 +44,7 @@ public class EFileSystem extends FileSystem {
     }
 
     public FSOutputStream create(String path) {
+
         // 构造函数中会修正path和fileSystem
         return new FSOutputStream(fileName, path);
     }
@@ -51,7 +54,16 @@ public class EFileSystem extends FileSystem {
     }
 
     public boolean delete(String path) {
-        return false;
+        if(!fileName.startsWith("/")){
+            fileName = "/" + fileName;
+        }
+        if(!path.startsWith("/")){
+            path = "/" + path;
+        }
+        Map<String, Object> formDatas = new HashMap<>();
+        formDatas.put("path", fileName + path);
+        HttpResponse httpResponse = HttpClientUtil.sendPostToMetaServer("/delete", formDatas);
+        return httpResponse.getCode() == 200;
     }
 
     public StatInfo getFileStats(String path) {

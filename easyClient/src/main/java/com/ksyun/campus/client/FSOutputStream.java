@@ -1,18 +1,7 @@
 package com.ksyun.campus.client;
 
-import com.ksyun.campus.client.util.HttpClientConfig;
 import com.ksyun.campus.client.util.HttpClientUtil;
-import com.ksyun.campus.client.util.ZkUtil;
 import lombok.SneakyThrows;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.hc.client5.http.classic.HttpClient;
-import org.apache.hc.client5.http.classic.methods.HttpPost;
-import org.apache.hc.client5.http.entity.mime.ByteArrayBody;
-import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
-import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpResponse;
 
 import java.io.IOException;
@@ -61,15 +50,10 @@ public class FSOutputStream extends OutputStream {
     @Override
     public void write(byte[] b) throws IOException {
         Map<String,Object> map = new HashMap<>();
-        if(!fileSystem.startsWith("/")){
-            fileSystem = "/" + fileSystem;
-        }
-        if(!fileLogicPath.startsWith("/")){
-            fileLogicPath = "/" + fileLogicPath;
-        }
+        // 构造函数已经修正了path和fileSystem，这里不用再修正
         map.put("path",fileSystem + fileLogicPath);
         map.put("file",b);
-        HttpResponse response = HttpClientUtil.sendPost("/create", map);
+        HttpResponse response = HttpClientUtil.sendPostToMetaServer("/create", map);
         if(response.getCode() != 200){
             throw new RuntimeException("write file failed");
         }
