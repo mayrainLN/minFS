@@ -53,7 +53,7 @@ public class FSOutputStream extends OutputStream {
         // 构造函数已经修正了path和fileSystem，这里不用再修正
         map.put("path",fileSystem + fileLogicPath);
         map.put("file",b);
-        HttpResponse response = HttpClientUtil.sendPostToMetaServer("/create", map);
+        HttpResponse response = HttpClientUtil.sendPostToMetaServer("/write", map);
         if(response.getCode() != 200){
             throw new RuntimeException("write file failed");
         }
@@ -66,6 +66,13 @@ public class FSOutputStream extends OutputStream {
 
     @Override
     public void close() throws IOException {
+        Map<String,Object> map = new HashMap<>();
+        // 构造函数已经修正了path和fileSystem，这里不用再修正
+        map.put("path",fileSystem + fileLogicPath);
+        HttpResponse response = HttpClientUtil.sendPostToMetaServer("/commit", map);
+        if(response.getCode() != 200){
+            throw new RuntimeException("提交文件失败");
+        }
         super.close();
     }
 }

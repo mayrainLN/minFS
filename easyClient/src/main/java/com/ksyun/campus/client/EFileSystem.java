@@ -5,6 +5,7 @@ import com.ksyun.campus.client.domain.ClusterInfo;
 import com.ksyun.campus.client.domain.StatInfo;
 import com.ksyun.campus.client.util.HttpClientConfig;
 import com.ksyun.campus.client.util.HttpClientUtil;
+import com.ksyun.campus.client.util.MetaServerClient;
 import com.ksyun.campus.client.util.ZkUtil;
 import dto.PrefixConstants;
 import lombok.SneakyThrows;
@@ -20,10 +21,7 @@ import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpResponse;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 // 文件相关的操作，都是以path开头
@@ -47,6 +45,18 @@ public class EFileSystem extends FileSystem {
     // TODO 需求理解错了。老师在这里的意思是create只是创建文件
     // TODO 后续是调用write方法追加数据，调用close方法完成Commit
     public FSOutputStream create(String path) {
+        if(!fileName.startsWith("/")){
+            fileName = "/" + fileName;
+        }
+        if(!path.startsWith("/")){
+            path = "/" + path;
+        }
+        Map<String, Object> formDatas = new HashMap<>();
+        formDatas.put("path", fileName + path);
+        HttpResponse res = HttpClientUtil.sendPostToMetaServer("/create",formDatas);
+        if(res.getCode()!=200){
+            throw new RuntimeException("创建文件失败");
+        }
         // 构造函数中会修正path和fileSystem
         return new FSOutputStream(fileName, path);
     }
