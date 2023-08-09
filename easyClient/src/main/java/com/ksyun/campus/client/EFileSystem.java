@@ -43,8 +43,10 @@ public class EFileSystem extends FileSystem {
         return null;
     }
 
+    // 创建文件的时候，会把path和fileSystem修正
+    // TODO 需求理解错了。老师在这里的意思是create只是创建文件
+    // TODO 后续是调用write方法追加数据，调用close方法完成Commit
     public FSOutputStream create(String path) {
-
         // 构造函数中会修正path和fileSystem
         return new FSOutputStream(fileName, path);
     }

@@ -45,7 +45,6 @@ public class ServerStartHook implements ApplicationRunner {
             client.create().creatingParentsIfNeeded().forPath(DataServerInfoParentPath);
         }
 
-
         DataServerInstance instance = DataServerInstance.builder()
                 .host(serverInfoUtil.getIp())
                 .port(serverInfoUtil.getPort())

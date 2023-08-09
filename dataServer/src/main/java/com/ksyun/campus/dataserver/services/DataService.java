@@ -5,6 +5,7 @@ import com.ksyun.campus.dataserver.util.DataServerInfoUtil;
 import dto.DataServerInstance;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
@@ -32,6 +33,30 @@ public class DataService {
 
     @Resource
     CuratorFramework client;
+
+    /**
+     * 返回文件存储的真实路径
+     * @param fileLogicPath
+     * @return
+     */
+    public ResponseEntity createFile(String fileLogicPath) {
+        Path filePath = Paths.get(dataServerInfoUtil.getRealBasePath()+fileLogicPath);  // 文件全路径
+        if (filePath.toFile().exists()) {
+            log.error("文件已存在");
+            return ResponseEntity.badRequest().body("文件已存在");
+        }
+        try {
+            if (!filePath.getParent().toFile().exists()){
+                FileUtils.forceMkdir(filePath.getParent().toFile());
+            }
+            Files.createFile(filePath);
+            return ResponseEntity.ok().body(filePath.toFile().getAbsolutePath().replace('\\', '/'));
+        } catch (IOException e) {
+
+            log.error("文件创建失败", e);
+            return ResponseEntity.badRequest().body("文件创建失败");
+        }
+    }
 
     /**
      * 在指定本地磁盘路径下，读取指定大小的内容后返回
@@ -62,7 +87,9 @@ public class DataService {
 
 
     /**
-     *
+     * 追加写入。
+     * 由metaServer来控制 创建、覆盖写 的逻辑。
+     * 请求能打到DataServer就默认文件已经创建，但还没有commit
      * // getRealBasePath：/data/
      * // fileSystem：C/
      * // fileLogicPath：txt/test.txt
@@ -72,8 +99,7 @@ public class DataService {
      *                      不能以/开头
      * @return
      */
-    // TODO 写文件时要去ZK中更新本机DataServer的信息，如容量、文件数等
-    public ResponseEntity writeLocalFile(String fileSystem, String fileLogicPath, byte[] data) {
+    public ResponseEntity appendLocalFile(String fileSystem, String fileLogicPath, byte[] data) {
         if(fileSystem==null){
             fileSystem = "";
         }
@@ -82,31 +108,25 @@ public class DataService {
         if (fileSystem == null || fileSystem.isEmpty()) {
             // 没有指定目录，写在base目录下
             filePath = Paths.get(dataServerInfoUtil.getRealBasePath(), fileLogicPath);
-            dirPath = filePath.getParent();
+//            dirPath = filePath.getParent();
         } else {
             // 指定了目录，写在指定目录下
             filePath = Paths.get(dataServerInfoUtil.getRealBasePath(), fileSystem, fileLogicPath);
-            dirPath = filePath.getParent();
+//            dirPath = filePath.getParent();
         }
         String absolutePath = filePath.toFile().getAbsolutePath();
-
         try {
-            // 文件夹不存在先创建文件夹
-            if(!Files.exists(dirPath)){
-                Files.createDirectories(dirPath);
+            if(!Files.exists(filePath)){
+                log.error("{}文件未创建，无法写入", absolutePath);
+                return ResponseEntity.badRequest().body("文件未创建，无法写入");
             }
-            // 覆盖写：如果文件已经存在，则先删除原文件
-            if (Files.exists(filePath)) {
-                Files.delete(filePath);
-            }
-            Files.write(filePath, data);
 
-            // 统一转换为Linux风格的路径
-            absolutePath = absolutePath.replace("\\", "/");
+            File file = new File(absolutePath);
+            FileUtils.writeByteArrayToFile(file, data, true);
             return ResponseEntity.ok(absolutePath);
         } catch (IOException e) {
-            log.error("本地写入失败", e);
-            return (ResponseEntity) ResponseEntity.badRequest();
+            log.error("本地追加写入失败", e);
+            return ResponseEntity.badRequest().body("本地追加写入失败");
         }
     }
 
@@ -197,6 +217,6 @@ public class DataService {
         if(file.exists()){
             file.delete();
         }
-        return new ResponseEntity(HttpStatus.OK);
+        return ResponseEntity.ok().body("删除成功");
     }
 }

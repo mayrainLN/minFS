@@ -27,6 +27,8 @@ public class StatInfo {
 
     public long mtime;
 
+    public boolean isCommitted;
+
     /**
      * volum 、file、directory
      */

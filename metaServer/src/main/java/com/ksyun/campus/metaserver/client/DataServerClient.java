@@ -1,5 +1,7 @@
 package com.ksyun.campus.metaserver.client;
 
+import com.google.common.collect.Maps;
+import com.ksyun.campus.metaserver.util.HttpUtil;
 import dto.DataServerInstance;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,15 +13,19 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
  * @author :MayRain
  * @version :1.0
  * @date :2023/8/7 11:47
- * @description :
+ * @description : 主要是封装网络请求，提供给Service层调用。方便Service优化，比如CountDownLatch等
  */
 @Component
 @Slf4j
@@ -27,13 +33,12 @@ public class DataServerClient {
     @Autowired
     RestTemplate restTemplate;
 
-    /**
-     * 写文件到指定的DataServer
-     */
-    public ResponseEntity writeFileToDataServer(DataServerInstance dataServerInstance,
-                                  String fileSystem,
-                                  String path,
-                                  MultipartFile file){
+    @Resource
+    HttpUtil httpUtil;
+
+    public ResponseEntity appendReplicas(DataServerInstance dataServerInstance,
+                                         String path,
+                                         MultipartFile file){
         byte[] bytes = null;
         try {
             bytes = file.getBytes();
@@ -42,61 +47,32 @@ public class DataServerClient {
             e.printStackTrace();
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
+        String url = "http://" + dataServerInstance.getHost() + ":" + dataServerInstance.getPort() + "/write";
 
-        MultiValueMap<String, Object> formData = new LinkedMultiValueMap<>();
-        ByteArrayResource fileResource = new ByteArrayResource(bytes) {
-            @Override
-            public String getFilename() {
-                return Objects.requireNonNull(file.getOriginalFilename());
-            }
-        };
-        formData.add("file", fileResource);
-        formData.add("path", path);
+        Map<String, Object> map = new HashMap<>();
+        map.put("path", path);
+        map.put("file", bytes);
+        ResponseEntity<String> stringResponseEntity = httpUtil.sendPostToDataServer(url, map);
+        return stringResponseEntity;
+    }
 
-        HttpHeaders headers = new HttpHeaders();
-
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-        headers.set("fileSystem", fileSystem);
-
-        String targetUrl = "http://" + dataServerInstance.getHost() + ":" + dataServerInstance.getPort() + "/write";
-        RequestEntity<MultiValueMap<String, Object>> requestEntity = RequestEntity
-                .post(URI.create(targetUrl))
-                .headers(headers)
-                .body(formData);
-
-        // 发送formData格式的请求
-        ResponseEntity<String> responseEntity = restTemplate.exchange(
-                requestEntity,
-                String.class
-        );
-        return responseEntity;
+    public ResponseEntity createFileOnDataServer(DataServerInstance dataServerInstance,
+                                         String path){
+        String url = "http://" + dataServerInstance.getHost() + ":" + dataServerInstance.getPort() + "/create";
+        Map<String, Object> map = new HashMap<>();
+        map.put("path", path);
+        ResponseEntity<String> stringResponseEntity = httpUtil.sendPostToDataServer(url, map);
+        return stringResponseEntity;
     }
 
     public ResponseEntity deleteFile(DataServerInstance dataServerInstance,
-                                     String fileSystem,
                                      String path){
 
-        MultiValueMap<String, Object> formData = new LinkedMultiValueMap<>();
-        formData.add("path", path);
+        String url = "http://" + dataServerInstance.getHost() + ":" + dataServerInstance.getPort() + "/delete";
+        Map map = new HashMap();
+        map.put("path", path);
 
-        HttpHeaders headers = new HttpHeaders();
-
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-        headers.set("fileSystem", fileSystem);
-
-        String targetUrl = "http://" + dataServerInstance.getHost() + ":" + dataServerInstance.getPort() + "/delete";
-        RequestEntity<MultiValueMap<String, Object>> requestEntity = RequestEntity
-                .post(URI.create(targetUrl))
-                .headers(headers)
-                .body(formData);
-
-        // 发送formData格式的请求
-        ResponseEntity<String> responseEntity = restTemplate.exchange(
-                requestEntity,
-                String.class
-        );
-
-        return responseEntity;
+        return httpUtil.sendPostToDataServer(url, map);
     }
 
 }

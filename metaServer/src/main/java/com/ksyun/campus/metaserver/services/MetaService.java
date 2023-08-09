@@ -20,7 +20,11 @@ import javax.annotation.Resource;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
+/**
+ * Controller层已经处理过了FileSystem，path已经包含了FileSystem
+ */
 @Service
 @Slf4j
 public class MetaService {
@@ -83,43 +87,29 @@ public class MetaService {
     /**
      *
      * @param dataServerInstances 副本所在的三个dataServer
-     * @param fileSystem
      * @param path
      * @param file 新文件
      * @return
      */
-    public ResponseEntity writeFileToDataServer(List<DataServerInstance> dataServerInstances,
-                                                String fileSystem,
+    public ResponseEntity appendReplica(List<DataServerInstance> dataServerInstances,
                                                 String path,
-                                                MultipartFile file,
-                                                Map<DataServerInstance, String> pathMap) {
-        byte[] bytes = null;
-        try {
-            bytes = file.getBytes();
-        } catch (IOException e) {
-            log.error("文件内容读取错误");
-            e.printStackTrace();
-            return new ResponseEntity(HttpStatus.BAD_REQUEST);
-        }
-
+                                                MultipartFile file) {
         // 请求dataServer创建文件
         // TODO 创建文件这里可以并发请求，用Future接收。 可以用CountDownLatch
         for (DataServerInstance dataServerInstance : dataServerInstances) {
             //TODO 支持重试机制
-            ResponseEntity responseEntity = dataServerClient.writeFileToDataServer(dataServerInstance, fileSystem, path, file);
+            ResponseEntity responseEntity = dataServerClient.appendReplicas(dataServerInstance, path, file);
             if(responseEntity.getStatusCode()!=HttpStatus.OK){
-                return (ResponseEntity) ResponseEntity.internalServerError();
+                log.error("追加写入失败");
+                return ResponseEntity.internalServerError().body("追加写入失败");
             }
-            pathMap.put(dataServerInstance, responseEntity.getBody().toString());
         }
-        return new ResponseEntity(HttpStatus.OK);
+        return ResponseEntity.ok().body("追加写入成功");
     }
 
     @SneakyThrows
-    public ResponseEntity updateMetaData(String fileSystem, String path, MultipartFile file, List<DataServerInstance> dataServerInstances, Map<DataServerInstance, String> pathMap) {
-        if(fileSystem == null){
-            fileSystem = "";
-        }
+    public ResponseEntity updateMetaData(String path, List<DataServerInstance> dataServerInstances, Map<DataServerInstance, String> pathMap) {
+
         List<ReplicaData> replicaDataList = new ArrayList<>();
         for (DataServerInstance dataServerInstance : dataServerInstances) {
             ReplicaData replicaData = new ReplicaData(dataServerInstance)
@@ -129,18 +119,12 @@ public class MetaService {
         }
         // 创建文件的元数据信息
         StatInfo fileStateInfo = StatInfo.builder()
-                .path(fileSystem + path) // 存逻辑路径
-                .size(file.getSize())
-                .mtime(System.currentTimeMillis())
+                .path( path) // 存逻辑路径
                 .type(FileType.File)
                 .replicaData(replicaDataList)
                 .build();
 
-        if (fileSystem == null) {
-            fileSystem = "";
-        }
-        String fileLogicPath = fileSystem + path;
-        String targetMataDataPath = PrefixConstants.ZK_PATH_FILE_META_INFO + fileLogicPath;
+        String targetMataDataPath = PrefixConstants.ZK_PATH_FILE_META_INFO + path;
         if(client.checkExists().forPath(targetMataDataPath)== null){
             // 没有元信息，说明是创建文件。创建元信息
 //            log.info("创建元数据：{}", fileStateInfo.toString());
@@ -193,5 +177,23 @@ public class MetaService {
             e.printStackTrace();
         }
         return JSONUtil.toBean(new String(bytes), StatInfo.class);
+    }
+
+    @SneakyThrows
+    public ResponseEntity createFile(String logicPath) {
+        List<DataServerInstance> dataServerInstanceList = this.pickDataServerToWrite();
+        // 请求dataServer创建文件
+        Map<DataServerInstance,String> realPathMap = new HashMap<>();
+        // TODO 创建文件这里可以并发请求，用Future接收。 可以用CountDownLatch
+        for (DataServerInstance dataServerInstance : dataServerInstanceList) {
+            //TODO 支持重试机制
+            ResponseEntity responseEntity = dataServerClient.createFileOnDataServer(dataServerInstance, logicPath);
+            if(responseEntity.getStatusCode()!=HttpStatus.OK){
+                return responseEntity;
+            }
+            // 存储文件位于dataServer上的真实路径
+            realPathMap.put(dataServerInstance, responseEntity.getBody().toString());
+        }
+        return updateMetaData(logicPath, dataServerInstanceList, realPathMap);
     }
 }

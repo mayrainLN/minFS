@@ -1,5 +1,7 @@
 package com.ksyun.campus.metaserver.controller;
 
+import cn.hutool.Hutool;
+import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.ksyun.campus.metaserver.client.DataServerClient;
 
@@ -21,6 +23,11 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.Resource;
 import java.util.*;
 
+
+/**
+ * 所有的FileSystem参数已经在Client做好了处理。
+ * 在Controller层直接拼接FileSystem和Path即可。
+ */
 @RestController("/")
 @Slf4j
 public class MetaController {
@@ -34,13 +41,14 @@ public class MetaController {
     DataServerClient dataServerClient;
 
     @RequestMapping("stats")
-    public ResponseEntity stats(@RequestHeader String fileSystem,@RequestParam String path){
+    public ResponseEntity stats(@RequestHeader String fileSystem, @RequestParam String path) {
         return new ResponseEntity(HttpStatus.OK);
     }
 
     /**
      * 1. 负载均衡创建文件 | 按照元信息中的路径重新创建文件
      * 2. 创建/修改文件的元数据信息
+     *
      * @param fileSystem
      * @param path
      * @return
@@ -49,76 +57,33 @@ public class MetaController {
     @RequestMapping("create")
     public ResponseEntity createFile(
             @RequestHeader(required = false) String fileSystem,
-            @RequestParam("path") String path,
-            @RequestParam("file") MultipartFile file){
-
-
-        if(fileSystem == null){
-            fileSystem = "";
-        }
-        String fileLogicPath = fileSystem + path;
-        String targetMataDataPath = PrefixConstants.ZK_PATH_FILE_META_INFO + fileLogicPath;
-        List<DataServerInstance> dataServerInstanceList = null;
-
-        /**
-         * 判断文件是否存在
-         */
-        if(client.checkExists().forPath(targetMataDataPath)!=null){
-            // 源文件存在,按照原路径修改源文件
-            byte[] bytes = client.getData().forPath(targetMataDataPath);
-            StatInfo statInfo = JSONUtil.toBean(new String(bytes), StatInfo.class);
-            List<ReplicaData> replicaDatas = statInfo.getReplicaData();
-            // 文件所在dataServer
-            dataServerInstanceList = this.getInstancesListFromRelicaDatas(replicaDatas);
-            log.info("文件已存在,即将修改文件");
-        }else{
-            // 源文件不存在,选出三个DataServer创建新文件
-            dataServerInstanceList = metaService.pickDataServerToWrite();
-            log.info("文件不存在,即将创建文件");
-        }
-
-        /**
-         * 写入/修改文件
-         */
-        // 存储 dataServer 和 真实路径 的映射关系,写入/修改文件 的时候会同步更新pathMap
-        Map<DataServerInstance, String> pathMap = new HashMap<>();
-        ResponseEntity responseEntity = metaService.writeFileToDataServer(dataServerInstanceList, fileSystem, path, file,pathMap);
-        if(!responseEntity.getStatusCode().is2xxSuccessful()){
-            return (ResponseEntity) ResponseEntity.internalServerError();
-        }
-
-        /**
-         * 写入/修改文件元数据
-         */
-        ResponseEntity updateMetaDataRes = metaService.updateMetaData(fileSystem, path, file, dataServerInstanceList, pathMap);
-        return updateMetaDataRes;
+            @RequestParam("path") String path) {
+        String logicPath = getLogicPath(fileSystem, path);
+        return metaService.createFile(logicPath);
     }
-
 
 
     /**
      * 创建目录
+     *
      * @param fileSystem
      * @param path
      * @return
      */
     @RequestMapping("mkdir")
-    public ResponseEntity mkdir(@RequestHeader String fileSystem, @RequestParam String path){
+    public ResponseEntity mkdir(@RequestHeader String fileSystem, @RequestParam String path) {
         return new ResponseEntity(HttpStatus.OK);
     }
 
     @RequestMapping("listdir")
-    public ResponseEntity listdir(@RequestHeader String fileSystem,@RequestParam String path){
+    public ResponseEntity listdir(@RequestHeader String fileSystem, @RequestParam String path) {
         return new ResponseEntity(HttpStatus.OK);
     }
 
     @SneakyThrows
     @RequestMapping("delete")
-    public ResponseEntity delete(@RequestHeader(required = false) String fileSystem, @RequestParam String path){
-        if(fileSystem == null){
-            fileSystem = "";
-        }
-        path+=fileSystem;
+    public ResponseEntity delete(@RequestHeader(required = false) String fileSystem, @RequestParam String path) {
+        path = getLogicPath(fileSystem, path);
         StatInfo fileMetaInfo = metaService.getFileMetaInfo(path);
         // 删除数据
         for (ReplicaData replicaData : fileMetaInfo.getReplicaData()) {
@@ -129,36 +94,84 @@ public class MetaController {
                     .host(host)
                     .port(port)
                     .build();
-            dataServerClient.deleteFile(dataServerInstance, fileSystem, path);
+            dataServerClient.deleteFile(dataServerInstance, path);
         }
 
         path = PrefixConstants.ZK_PATH_FILE_META_INFO + path;
         client.delete().forPath(path);
-        return new ResponseEntity(HttpStatus.OK);
+        return ResponseEntity.ok().body("删除成功");
     }
 
     /**
-     * 提交写
-     * client写完文件后，向MetaServer提交。
-     * 保存文件写入成功后的元数据信息，包括文件path、size、三副本信息等
+     * 追加写。写之前要检查文件是否已经被Commit
+     * 依据就是ZK中的replica
+     * 中间过程不需要改动元数据信息，只有在create和commit的时候才需要改动元数据信息
+     *
      * @param fileSystem
      * @param path
      * @return
      */
+    @SneakyThrows
     @RequestMapping("write")
-    public ResponseEntity commitWrite(@RequestHeader String fileSystem, @RequestParam String path){
+    public ResponseEntity write(@RequestHeader(required = false) String fileSystem, @RequestParam String path, @RequestParam("file") MultipartFile file) {
+        String fileLogicPath = getLogicPath(fileSystem, path);
+        String targetMataDataPath = PrefixConstants.ZK_PATH_FILE_META_INFO + fileLogicPath;
+        List<DataServerInstance> dataServerInstanceList = null;
+        StatInfo statInfo = null;
+        /**
+         * 判断文件是否commit
+         */
+        if (client.checkExists().forPath(targetMataDataPath) != null) {
+            byte[] bytes = client.getData().forPath(targetMataDataPath);
+            statInfo = JSONUtil.toBean(new String(bytes), StatInfo.class);
+            if (statInfo.isCommitted()) {
+                return ResponseEntity.badRequest().body("文件已经体检,不允许修改,请删除后重新Create");
+            }
+            dataServerInstanceList = getInstancesListFromRelicaDatas(statInfo.getReplicaData());
+            return metaService.appendReplica(dataServerInstanceList, path, file);
+        } else {
+            return ResponseEntity.badRequest().body("文件不存在,请先Create");
+        }
 
-        return null;
+    }
+
+    /**
+     * 修改文件的元数据信息
+     *
+     * @param fileSystem
+     * @param path
+     * @return
+     */
+    @SneakyThrows
+    @RequestMapping("commit")
+    public ResponseEntity commit(@RequestHeader(required = false) String fileSystem, @RequestParam String path) {
+        String fileLogicPath = getLogicPath(fileSystem, path);
+        String targetMataDataPath = PrefixConstants.ZK_PATH_FILE_META_INFO + fileLogicPath;
+        if (client.checkExists().forPath(targetMataDataPath) == null) {
+            return ResponseEntity.badRequest().body("文件未创建,请先Create");
+        }
+        byte[] bytes = client.getData().forPath(targetMataDataPath);
+        String json = new String(bytes);
+        StatInfo statInfo = JSONUtil.toBean(json, StatInfo.class);
+        if (statInfo.isCommitted()) {
+            return ResponseEntity.badRequest().body("文件已经提交,请勿重复提交");
+        }
+        statInfo.setCommitted(true);
+        statInfo.setMtime(System.currentTimeMillis());
+        statInfo.setSize(999999);
+        client.setData().forPath(targetMataDataPath, JSONUtil.toJsonStr(statInfo).getBytes());
+        return ResponseEntity.ok().body("文件提交成功");
     }
 
     /**
      * 根据文件path查询三副本的位置，返回客户端具体ds、文件分块信息
+     *
      * @param fileSystem
      * @param path
      * @return
      */
     @RequestMapping("open")
-    public ResponseEntity open(@RequestHeader String fileSystem, @RequestParam String path){
+    public ResponseEntity open(@RequestHeader String fileSystem, @RequestParam String path) {
         return null;
     }
 
@@ -166,11 +179,11 @@ public class MetaController {
      * 关闭退出进程
      */
     @RequestMapping("shutdown")
-    public void shutdownServer(){
+    public void shutdownServer() {
         System.exit(-1);
     }
 
-    private List<DataServerInstance>  getInstancesListFromRelicaDatas(List<ReplicaData> replicaDatas){
+    private List<DataServerInstance> getInstancesListFromRelicaDatas(List<ReplicaData> replicaDatas) {
         List<DataServerInstance> dataServerInstances = new ArrayList<>();
         for (ReplicaData replicaData : replicaDatas) {
             String dsNode = replicaData.getDsNode();// localhost:8000
@@ -184,4 +197,12 @@ public class MetaController {
         }
         return dataServerInstances;
     }
+
+    private String getLogicPath(String fileSystem, String path) {
+        if (fileSystem == null) {
+            fileSystem = "";
+        }
+        return fileSystem + path;
+    }
+
 }
