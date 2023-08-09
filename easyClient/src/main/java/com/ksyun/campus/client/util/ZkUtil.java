@@ -13,6 +13,7 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 
+import java.util.Collections;
 import java.util.List;
 
 
@@ -58,8 +59,9 @@ public class ZkUtil {
      */
     @SneakyThrows
     private static String initReactiveMetaServer() {
-        List<String> strings = client.getChildren().forPath(ZK_PATH_META_SERVER_INFO);
-        String masterNode = strings.get(0);
+        List<String> nodeNameList = client.getChildren().forPath(ZK_PATH_META_SERVER_INFO);
+        Collections.sort(nodeNameList);
+        String masterNode = nodeNameList.get(0);
         byte[] bytes = client.getData().forPath(ZK_PATH_META_SERVER_INFO + "/" + masterNode);
         metaServerMsg = JSONUtil.toBean(new String(bytes), ClusterInfo.MetaServerMsg.class);
 
@@ -89,6 +91,7 @@ public class ZkUtil {
                     // 重新获取剩余节点列表
                     List<String> children;
                     children = client.getChildren().forPath(PrefixConstants.ZK_PATH_META_SERVER_INFO);
+                    Collections.sort(children);
                     // 获取新的最小节点
                     if (!children.isEmpty()) {
                         String newMinNodePath = PrefixConstants.ZK_PATH_META_SERVER_INFO + "/" + children.get(0);
