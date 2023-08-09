@@ -52,13 +52,7 @@ public class DataController {
          * 修改元数据中本机剩余容量
          *
          */
-        //TODO 这里仅仅把所有写当做是第一次写入，单调地减少剩余容量
-        //TODO 实际上，如果本地已经有这个文件了， 就要检查文件的大小，再计算本地容量的增减情况
-
-        //TODO 不只是写入文件要这样考虑，还有删除文件，甚至删除文件夹也是
-
-        //TODO 真要做起来，还不如直接用100M - 根目录文件夹大小。缺点就是只适用于本题目。
-        //TODO 已完成: 直接修改元数据中本机剩余容量
+        //TODO 已完成: 直接修改元数据中本机剩余容量。不然会有点麻烦，还要分类讨论第一次写入和非第一次写入的情况
         int restCapacity = dataServerInfoUtil.getRestCapacity();
         DataServerInstance newDataServerInfo = dataServerInfo.setCapacity(restCapacity);
         dataService.updateMetaData(dataServerInfoPath, newDataServerInfo);

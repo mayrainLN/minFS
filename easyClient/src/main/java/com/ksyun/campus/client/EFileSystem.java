@@ -3,6 +3,8 @@ package com.ksyun.campus.client;
 import cn.hutool.json.JSONUtil;
 import com.ksyun.campus.client.domain.ClusterInfo;
 import com.ksyun.campus.client.domain.StatInfo;
+import com.ksyun.campus.client.util.HttpClientConfig;
+import com.ksyun.campus.client.util.HttpClientUtil;
 import com.ksyun.campus.client.util.ZkUtil;
 import dto.PrefixConstants;
 import lombok.SneakyThrows;
@@ -10,6 +12,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.entity.mime.ByteArrayBody;
+import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.HttpResponse;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,12 +42,7 @@ public class EFileSystem extends FileSystem {
     }
 
     public FSOutputStream create(String path) {
-        if(!fileName.startsWith("/")){
-            fileName = "/" + fileName;
-        }
-        if(!path.startsWith("/")){
-            path = "/" + path;
-        }
+        // 构造函数中会修正path和fileSystem
         return new FSOutputStream(fileName, path);
     }
 

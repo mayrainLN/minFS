@@ -133,7 +133,6 @@ public class MetaController {
         }
 
         path = PrefixConstants.ZK_PATH_FILE_META_INFO + path;
-        // TODO 删除元数据
         client.delete().forPath(path);
         return new ResponseEntity(HttpStatus.OK);
     }

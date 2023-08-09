@@ -40,7 +40,6 @@ public class StartHook implements ApplicationRunner {
         MetaServerMsg serverMsg = new MetaServerMsg();
         serverMsg.setHost("localhost");
         serverMsg.setPort(serverPort);
-        // TODO 启动时注册，主从结构
         String zNodePath = client.create().
                 withMode(CreateMode.EPHEMERAL_SEQUENTIAL).
                 forPath(basePath + "/node-");

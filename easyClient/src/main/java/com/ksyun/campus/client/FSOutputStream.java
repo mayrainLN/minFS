@@ -1,5 +1,6 @@
 package com.ksyun.campus.client;
 
+import com.ksyun.campus.client.util.HttpClientConfig;
 import com.ksyun.campus.client.util.HttpClientUtil;
 import com.ksyun.campus.client.util.ZkUtil;
 import lombok.SneakyThrows;
@@ -16,17 +17,33 @@ import org.apache.hc.core5.http.HttpResponse;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Map;
 
 public class FSOutputStream extends OutputStream {
     private String fileLogicPath;
     private String fileSystem = "default";
 
     public FSOutputStream( String fileSystem,String fileLogicPath) {
+        if(!fileSystem.startsWith("/")){
+            fileSystem = "/" + fileSystem;
+        }
+        if(!fileLogicPath.startsWith("/")){
+            fileLogicPath = "/" + fileLogicPath;
+        }
+
         this.fileLogicPath = fileLogicPath;
         this.fileSystem = fileSystem;
     }
 
     public FSOutputStream(String fileLogicPath) {
+        // 规范一下路径, 减少后端特判
+        if(!fileSystem.startsWith("/")){
+            fileSystem = "/" + fileSystem;
+        }
+        if(!fileLogicPath.startsWith("/")){
+            fileLogicPath = "/" + fileLogicPath;
+        }
         this.fileLogicPath = fileLogicPath;
     }
 
@@ -43,29 +60,16 @@ public class FSOutputStream extends OutputStream {
     @SneakyThrows
     @Override
     public void write(byte[] b) throws IOException {
-        String metaServerMasterAddr = ZkUtil.getMetaServerMasterAddr();
+        Map<String,Object> map = new HashMap<>();
         if(!fileSystem.startsWith("/")){
             fileSystem = "/" + fileSystem;
         }
         if(!fileLogicPath.startsWith("/")){
             fileLogicPath = "/" + fileLogicPath;
         }
-        String fullLogicPath = fileSystem + fileLogicPath;
-        HttpClient httpClient = HttpClientUtil.defaultClient();
-        HttpPost httpPost = new HttpPost("http://"+metaServerMasterAddr + "/create");
-        httpPost.setHeader("Content-Type", "multipart/form-data");
-        // 构建 MultipartEntityBuilder，用于创建 formdata 格式的请求体
-        MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create();
-        entityBuilder.addTextBody("path", fullLogicPath, ContentType.TEXT_PLAIN);
-        ByteArrayBody byteArrayBody = new ByteArrayBody(b, ContentType.APPLICATION_OCTET_STREAM, "tempFileName");
-        entityBuilder.addPart("file", byteArrayBody);
-
-        entityBuilder.setBoundary("----WebKitFormBoundary7MA4YWxkTrZu0gW");
-        // 构建请求实体
-        HttpEntity httpEntity = entityBuilder.build();
-        httpPost.setEntity(httpEntity);
-        httpPost.setHeader("Content-Type", "multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW");
-        HttpResponse response = httpClient.execute(httpPost);
+        map.put("path",fileSystem + fileLogicPath);
+        map.put("file",b);
+        HttpResponse response = HttpClientUtil.sendPost("/create", map);
         if(response.getCode() != 200){
             throw new RuntimeException("write file failed");
         }

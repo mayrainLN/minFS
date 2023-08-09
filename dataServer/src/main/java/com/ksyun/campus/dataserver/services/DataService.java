@@ -72,6 +72,7 @@ public class DataService {
      *                      不能以/开头
      * @return
      */
+    // TODO 写文件时要去ZK中更新本机DataServer的信息，如容量、文件数等
     public ResponseEntity writeLocalFile(String fileSystem, String fileLogicPath, byte[] data) {
         if(fileSystem==null){
             fileSystem = "";

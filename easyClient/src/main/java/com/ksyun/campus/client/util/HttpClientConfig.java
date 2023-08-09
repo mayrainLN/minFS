@@ -1,6 +1,7 @@
 package com.ksyun.campus.client.util;
 
 public class HttpClientConfig {
+	public static final String HTTP_FORMDATA_BOUNDARY = "----WebKitFormBoundary7MA4YWxkTrZu0gW";
 	private int socketSendBufferSizeHint = 8192;
 	private int socketReceiveBufferSizeHint = 8192;
 	/**
