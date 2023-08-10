@@ -24,15 +24,29 @@ import org.apache.hc.core5.http.HttpResponse;
 import java.util.*;
 
 @Slf4j
-// 文件相关的操作，都是以path开头
+/**
+ * 对磁盘的抽象
+ */
 public class EFileSystem extends FileSystem {
 
     private String fileName = "default";
 
     public EFileSystem() {
+        if(!fileName.startsWith("/")){
+            fileName = "/" + fileName;
+        }
+        if(fileName.endsWith("/")){
+            fileName = fileName.substring(0, fileName.length() - 1);
+        }
     }
 
     public EFileSystem(String fileName) {
+        if(!fileName.startsWith("/")){
+            fileName = "/" + fileName;
+        }
+        if(fileName.endsWith("/")){
+            fileName = fileName.substring(0, fileName.length() - 1);
+        }
         this.fileName = fileName;
     }
 
@@ -41,13 +55,10 @@ public class EFileSystem extends FileSystem {
         return null;
     }
 
-    // 创建文件的时候，会把path和fileSystem修正
     // TODO 需求理解错了。老师在这里的意思是create只是创建文件
     // TODO 后续是调用write方法追加数据，调用close方法完成Commit
     public FSOutputStream create(String path) {
-        if(!fileName.startsWith("/")){
-            fileName = "/" + fileName;
-        }
+        // 修正path
         if(!path.startsWith("/")){
             path = "/" + path;
         }
@@ -62,15 +73,24 @@ public class EFileSystem extends FileSystem {
     }
 
     public boolean mkdir(String path) {
-        return false;
+        if(!path.startsWith("/")){
+            path = "/" + path;
+        }
+        if(path.endsWith("/")){
+            path = path.substring(0, path.length() - 1);
+        }
+        Map<String, Object> formDatas = new HashMap<>();
+        formDatas.put("path",path);
+        HttpResponse httpResponse = HttpClientUtil.sendPostToMetaServer("/mkdir", formDatas);
+        return httpResponse.getCode() == 200;
     }
 
     public boolean delete(String path) {
-        if(!fileName.startsWith("/")){
-            fileName = "/" + fileName;
-        }
         if(!path.startsWith("/")){
             path = "/" + path;
+        }
+        if(path.endsWith("/")){
+            path = path.substring(0, path.length() - 1);
         }
         Map<String, Object> formDatas = new HashMap<>();
         formDatas.put("path", fileName + path);

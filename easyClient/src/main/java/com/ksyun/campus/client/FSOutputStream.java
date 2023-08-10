@@ -51,6 +51,7 @@ public class FSOutputStream extends OutputStream {
     public void write(byte[] b) throws IOException {
         Map<String,Object> map = new HashMap<>();
         // 构造函数已经修正了path和fileSystem，这里不用再修正
+
         map.put("path",fileSystem + fileLogicPath);
         map.put("file",b);
         HttpResponse response = HttpClientUtil.sendPostToMetaServer("/write", map);
