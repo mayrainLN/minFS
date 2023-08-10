@@ -11,4 +11,5 @@ public class PrefixConstants {
     public static final String ZK_PATH_FILE_META_INFO = "/MinFS/metaData";
     public static final String ZK_PATH_DATA_SERVER_INFO = "/MinFS/dataServerInfo";
     public static final String ZK_PATH_META_SERVER_INFO = "/MinFS/metaServerInfo";
+    public static final String DB_BASE_PATH_META_DATA = "metaData";
 }
