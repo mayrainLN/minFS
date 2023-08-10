@@ -1,9 +1,12 @@
 package com.ksyun.campus.client;
 
+import com.ksyun.campus.client.domain.StatInfo;
+
 import java.io.IOException;
 import java.io.InputStream;
 
 public class FSInputStream extends InputStream {
+    private StatInfo statInfo;
     @Override
     public int read() throws IOException {
         return 0;
@@ -22,5 +25,9 @@ public class FSInputStream extends InputStream {
     @Override
     public void close() throws IOException {
         super.close();
+    }
+
+    public void setStatInfo(StatInfo statInfo) {
+        this.statInfo = statInfo;
     }
 }

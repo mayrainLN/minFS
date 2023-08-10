@@ -177,7 +177,7 @@ public class MetaService {
     }
 
     /**
-     * @param path 以/开头
+     * @param path 逻辑路径,以/开头
      * @return
      */
     public StatInfo getFileMetaInfo(String path) {

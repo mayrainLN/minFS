@@ -13,10 +13,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.entity.mime.ByteArrayBody;
 import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpResponse;
@@ -50,9 +53,27 @@ public class EFileSystem extends FileSystem {
         this.fileName = fileName;
     }
 
-    // 暂时只写path。包含fileSystem
+    @SneakyThrows
     public FSInputStream open(String path) {
-        return null;
+        // 修正path
+        if(!path.startsWith("/")){
+            path = "/" + path;
+        }
+        Map<String, Object> formDatas = new HashMap<>();
+        formDatas.put("path", fileName + path);
+        ClassicHttpResponse httpResponse = HttpClientUtil.sendPostToMetaServer("/open", formDatas);
+        log.info("httpResponse:{}", httpResponse);
+
+        if(httpResponse.getCode()!=200){
+            log.error("打开文件失败");
+            return null;
+        }
+        byte[] bytes = new byte[Math.toIntExact(httpResponse.getEntity().getContentLength())];
+        httpResponse.getEntity().getContent().read(bytes);
+        StatInfo statInfo = JSONUtil.toBean(new String(bytes), StatInfo.class);
+        FSInputStream fsInputStream = new FSInputStream();
+        fsInputStream.setStatInfo(statInfo);
+        return fsInputStream;
     }
 
     // TODO 需求理解错了。老师在这里的意思是create只是创建文件
@@ -80,7 +101,7 @@ public class EFileSystem extends FileSystem {
             path = path.substring(0, path.length() - 1);
         }
         Map<String, Object> formDatas = new HashMap<>();
-        formDatas.put("path",path);
+        formDatas.put("path",fileName+path);
         HttpResponse httpResponse = HttpClientUtil.sendPostToMetaServer("/mkdir", formDatas);
         return httpResponse.getCode() == 200;
     }

@@ -1,6 +1,7 @@
 package com.ksyun.campus.client.util;
 
 import lombok.SneakyThrows;
+import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.config.ConnectionConfig;
@@ -8,10 +9,12 @@ import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.entity.mime.ByteArrayBody;
 import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
 import org.apache.hc.client5.http.impl.DefaultHttpRequestRetryStrategy;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
 import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
+import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpResponse;
@@ -73,7 +76,7 @@ public class HttpClientUtil {
      * @return
      */
     @SneakyThrows
-    public static HttpResponse sendPostToMetaServer(String url, Map<String,Object> formDatas){
+    public static ClassicHttpResponse sendPostToMetaServer(String url, Map<String,Object> formDatas){
         String metaServerMasterAddr = ZkUtil.getMetaServerMasterAddr();
         HttpClient httpClient = HttpClientUtil.defaultClient();
         HttpPost httpPost = new HttpPost("http://"+metaServerMasterAddr+url);
@@ -95,6 +98,6 @@ public class HttpClientUtil {
         HttpEntity httpEntity = entityBuilder.build();
         httpPost.setEntity(httpEntity);
         httpPost.setHeader("Content-Type", "multipart/form-data; boundary="+HttpClientConfig.HTTP_FORMDATA_BOUNDARY);
-        return httpClient.execute(httpPost);
+        return (ClassicHttpResponse) httpClient.execute(httpPost);
     }
 }

@@ -172,8 +172,10 @@ public class MetaController {
      * @return
      */
     @RequestMapping("open")
-    public ResponseEntity open(@RequestHeader String fileSystem, @RequestParam String path) {
-        return null;
+    public ResponseEntity open(@RequestHeader(required = false) String fileSystem, @RequestParam String path) {
+        String fileLogicPath = getLogicPath(fileSystem, path);
+        StatInfo fileMetaInfo = metaService.getFileMetaInfo(fileLogicPath);
+        return ResponseEntity.ok().body(JSONUtil.toJsonStr(fileMetaInfo).getBytes());
     }
 
     /**
