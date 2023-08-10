@@ -69,7 +69,7 @@ public class DataController {
     }
 
     @RequestMapping("read")
-    public ResponseEntity readFile(@RequestHeader(required = false) String fileSystem, @RequestParam String path, @RequestParam int offset, @RequestParam int length) {
+    public ResponseEntity readFile(@RequestHeader(required = false) String fileSystem, @RequestParam String path, @RequestParam(required = false) int offset, @RequestParam(required = false) int length) {
         return dataService.readFile(fileSystem, path, offset, length);
     }
 

@@ -75,8 +75,11 @@ public class DataService {
             fileSystem = "";
         }
         String fullRealFilePath = dataServerInfoUtil.getRealBasePath() + fileSystem + "/" + path;
-        byte[] data = read(fullRealFilePath, offset, length);
+        // TODO 这里的read语义不对。 client那里的read(b,off, len)是追对b中的偏移量和长度
+//        byte[] data = read(fullRealFilePath, offset, length);
 
+        // 我们这里应该是充当流的角色，全量读取
+        byte[] data = read(fullRealFilePath,0, Integer.MAX_VALUE);
         InputStream inputStream = new ByteArrayInputStream(data);
         InputStreamResource resource = new InputStreamResource(inputStream);
         HttpHeaders headers = new HttpHeaders();

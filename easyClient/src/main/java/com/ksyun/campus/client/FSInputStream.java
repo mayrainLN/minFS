@@ -15,6 +15,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+/**
+ * TODO read的语义有点问题
+ */
 @Slf4j
 public class FSInputStream extends InputStream {
     private StatInfo statInfo;
@@ -43,6 +46,7 @@ public class FSInputStream extends InputStream {
         return read(b, 0, b.length);
     }
 
+    // off和len都是指的在b中属性 ，和数据源没有关系。
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
         if(!isReadable(statInfo)){
