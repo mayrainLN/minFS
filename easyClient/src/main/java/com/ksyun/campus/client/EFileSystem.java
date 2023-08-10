@@ -120,6 +120,15 @@ public class EFileSystem extends FileSystem {
     }
 
     public StatInfo getFileStats(String path) {
+        if(!path.startsWith("/")){
+            path = "/" + path;
+        }
+        if(path.endsWith("/")){
+            path = path.substring(0, path.length() - 1);
+        }
+        Map<String, Object> formDatas = new HashMap<>();
+        formDatas.put("path", fileName + path);
+        HttpResponse httpResponse = HttpClientUtil.sendPostToMetaServer("/delete", formDatas);
         return null;
     }
 

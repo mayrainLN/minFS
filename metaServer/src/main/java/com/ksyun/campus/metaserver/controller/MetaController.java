@@ -5,6 +5,7 @@ import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.ksyun.campus.metaserver.client.DataServerClient;
 
+import com.ksyun.campus.metaserver.domain.FileType;
 import com.ksyun.campus.metaserver.domain.ReplicaData;
 import com.ksyun.campus.metaserver.domain.StatInfo;
 import com.ksyun.campus.metaserver.services.MetaService;
@@ -13,6 +14,7 @@ import dto.PrefixConstants;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.DeleteBuilder;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -86,21 +88,29 @@ public class MetaController {
     public ResponseEntity delete(@RequestHeader(required = false) String fileSystem, @RequestParam String path) {
         path = getLogicPath(fileSystem, path);
         StatInfo fileMetaInfo = metaService.getFileMetaInfo(path);
-        // 删除数据
-        for (ReplicaData replicaData : fileMetaInfo.getReplicaData()) {
-            String dsNode = replicaData.getDsNode();// localhost:8000
-            String host = dsNode.split(":")[0];
-            int port = Integer.parseInt(dsNode.split(":")[1]);
-            DataServerInstance dataServerInstance = DataServerInstance.builder()
-                    .host(host)
-                    .port(port)
-                    .build();
-            dataServerClient.deleteFile(dataServerInstance, path);
-        }
+        if(fileMetaInfo.getType() == FileType.File){
+            // 删除数据
+            for (ReplicaData replicaData : fileMetaInfo.getReplicaData()) {
+                String dsNode = replicaData.getDsNode();// localhost:8000
+                String host = dsNode.split(":")[0];
+                int port = Integer.parseInt(dsNode.split(":")[1]);
+                DataServerInstance dataServerInstance = DataServerInstance.builder()
+                        .host(host)
+                        .port(port)
+                        .build();
+                dataServerClient.deleteFile(dataServerInstance, path);
+            }
 
-        path = PrefixConstants.ZK_PATH_FILE_META_INFO + path;
-        client.delete().forPath(path);
-        return ResponseEntity.ok().body("删除成功");
+            path = PrefixConstants.ZK_PATH_FILE_META_INFO + path;
+            client.delete().forPath(path);
+            return ResponseEntity.ok().body("删除成功");
+        }else if(FileType.Directory == fileMetaInfo.getType()) {
+            // 删除目录
+            path = PrefixConstants.ZK_PATH_FILE_META_INFO + path;
+            client.delete().deletingChildrenIfNeeded().forPath(path);
+            return ResponseEntity.ok().body("删除成功");
+        }
+        return ResponseEntity.badRequest().body("位置类型，无法删除");
     }
 
     /**
