@@ -71,8 +71,9 @@ public class MetaController {
      * @return
      */
     @RequestMapping("mkdir")
-    public ResponseEntity mkdir(@RequestHeader String fileSystem, @RequestParam String path) {
-        return new ResponseEntity(HttpStatus.OK);
+    public ResponseEntity mkdir(@RequestHeader(required = false) String fileSystem, @RequestParam String path) {
+        path = getLogicPath(fileSystem, path);
+        return metaService.mkdir(path);
     }
 
     @RequestMapping("listdir")
@@ -198,9 +199,28 @@ public class MetaController {
         return dataServerInstances;
     }
 
+    /**
+     * 保证最后的逻辑地址是/a/b 或者a/b/x.txt
+     * @param fileSystem
+     * @param path
+     * @return
+     */
     private String getLogicPath(String fileSystem, String path) {
         if (fileSystem == null) {
             fileSystem = "";
+        }else{
+            if(!fileSystem.startsWith("/")){
+                fileSystem = "/" + fileSystem;
+            }
+            if(fileSystem.endsWith("/")){
+                fileSystem = fileSystem.substring(0,fileSystem.length()-1);
+            }
+        }
+        if(!path.startsWith("/")){
+            path = "/" + path;
+        }
+        if (path.endsWith("/")) {
+            path = path.substring(0, path.length() - 1);
         }
         return fileSystem + path;
     }
