@@ -68,7 +68,7 @@ public class DataController {
         return dataService.deleteLocalFile(fileSystem, path);
     }
 
-    @GetMapping("read")
+    @RequestMapping("read")
     public ResponseEntity readFile(@RequestHeader(required = false) String fileSystem, @RequestParam String path, @RequestParam int offset, @RequestParam int length) {
         return dataService.readFile(fileSystem, path, offset, length);
     }

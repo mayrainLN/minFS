@@ -78,8 +78,20 @@ public class HttpClientUtil {
     @SneakyThrows
     public static ClassicHttpResponse sendPostToMetaServer(String url, Map<String,Object> formDatas){
         String metaServerMasterAddr = ZkUtil.getMetaServerMasterAddr();
+        String fullUrl = "http://" + metaServerMasterAddr + url;
+        return sendPot(fullUrl,formDatas);
+    }
+
+    /**
+     *
+     * @param fullUrl 不包含http前缀、host和端口
+     * @param formDatas 其中的path应当是完整的逻辑路径，包含fileSystem，所以不用设置FileSystem了
+     * @return
+     */
+    @SneakyThrows
+    public static ClassicHttpResponse sendPot(String fullUrl, Map<String,Object> formDatas){
         HttpClient httpClient = HttpClientUtil.defaultClient();
-        HttpPost httpPost = new HttpPost("http://"+metaServerMasterAddr+url);
+        HttpPost httpPost = new HttpPost(fullUrl);
         httpPost.setHeader("Content-Type", "multipart/form-data");
         // 构建 MultipartEntityBuilder，用于创建 formdata 格式的请求体
         MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create();
@@ -91,6 +103,15 @@ public class HttpClientUtil {
         if(file!= null){
             ByteArrayBody byteArrayBody = new ByteArrayBody((byte[]) file, ContentType.APPLICATION_OCTET_STREAM, "tempFileName");
             entityBuilder.addPart("file", byteArrayBody);
+        }
+
+        Object offset = formDatas.get("offset");
+        if(offset!= null){
+            entityBuilder.addTextBody("offset", offset+"", ContentType.TEXT_PLAIN);
+        }
+        Object length = formDatas.get("length");
+        if(length!= null){
+            entityBuilder.addTextBody("length", length+"", ContentType.TEXT_PLAIN);
         }
 
         entityBuilder.setBoundary(HttpClientConfig.HTTP_FORMDATA_BOUNDARY);

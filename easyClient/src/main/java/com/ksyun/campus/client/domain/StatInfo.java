@@ -11,6 +11,7 @@ public class StatInfo {
     public long mtime;
     public FileType type;
     public List<ReplicaData> replicaData;
+    public boolean isCommitted;
 
     public StatInfo() {
     }
