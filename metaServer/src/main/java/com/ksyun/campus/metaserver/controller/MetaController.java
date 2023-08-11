@@ -1,7 +1,5 @@
 package com.ksyun.campus.metaserver.controller;
 
-import cn.hutool.Hutool;
-import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.ksyun.campus.metaserver.client.DataServerClient;
 
@@ -14,7 +12,6 @@ import dto.PrefixConstants;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.api.DeleteBuilder;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -61,6 +58,8 @@ public class MetaController {
             @RequestHeader(required = false) String fileSystem,
             @RequestParam("path") String path) {
         String logicPath = getLogicPath(fileSystem, path);
+        // TODO 先写成同步的吧，后面再改成异步的
+
         return metaService.createFile(logicPath);
     }
 
@@ -75,7 +74,7 @@ public class MetaController {
     @RequestMapping("mkdir")
     public ResponseEntity mkdir(@RequestHeader(required = false) String fileSystem, @RequestParam String path) {
         path = getLogicPath(fileSystem, path);
-        return metaService.mkdir(path);
+        return metaService.mkdirOnZK(path);
     }
 
     @RequestMapping("listdir")
@@ -87,7 +86,7 @@ public class MetaController {
     @RequestMapping("delete")
     public ResponseEntity delete(@RequestHeader(required = false) String fileSystem, @RequestParam String path) {
         path = getLogicPath(fileSystem, path);
-        StatInfo fileMetaInfo = metaService.getFileMetaInfo(path);
+        StatInfo fileMetaInfo = metaService.getFileMetaInfoFromZK(path);
         if(fileMetaInfo.getType() == FileType.File){
             // 删除数据
             for (ReplicaData replicaData : fileMetaInfo.getReplicaData()) {
@@ -148,6 +147,7 @@ public class MetaController {
 
     /**
      * 修改文件的元数据信息
+     * 无需修改上一级文件夹的mtime吗
      *
      * @param fileSystem
      * @param path
@@ -184,7 +184,7 @@ public class MetaController {
     @RequestMapping("open")
     public ResponseEntity open(@RequestHeader(required = false) String fileSystem, @RequestParam String path) {
         String fileLogicPath = getLogicPath(fileSystem, path);
-        StatInfo fileMetaInfo = metaService.getFileMetaInfo(fileLogicPath);
+        StatInfo fileMetaInfo = metaService.getFileMetaInfoFromZK(fileLogicPath);
         return ResponseEntity.ok().body(JSONUtil.toJsonStr(fileMetaInfo).getBytes());
     }
 

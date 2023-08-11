@@ -2,6 +2,7 @@ package com.ksyun.campus.metaserver.services;
 
 import cn.hutool.json.JSONUtil;
 import com.ksyun.campus.metaserver.client.DataServerClient;
+import com.ksyun.campus.metaserver.db.Database;
 import com.ksyun.campus.metaserver.domain.FileType;
 import com.ksyun.campus.metaserver.domain.ReplicaData;
 import com.ksyun.campus.metaserver.domain.StatInfo;
@@ -18,10 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Controller层已经处理过了FileSystem，path已经包含了FileSystem
@@ -34,6 +33,8 @@ public class MetaService {
 
     @Resource
     DataServerClient dataServerClient;
+
+
 
     /**
      * 选出3个dataServer，返回DataServerInstance
@@ -108,7 +109,7 @@ public class MetaService {
     }
 
     @SneakyThrows
-    public ResponseEntity updateMetaData(String path, List<DataServerInstance> dataServerInstances, Map<DataServerInstance, String> pathMap) {
+    public ResponseEntity updateMetaDataOnZK(String path, List<DataServerInstance> dataServerInstances, Map<DataServerInstance, String> pathMap) {
 
         List<ReplicaData> replicaDataList = new ArrayList<>();
         for (DataServerInstance dataServerInstance : dataServerInstances) {
@@ -128,7 +129,7 @@ public class MetaService {
         if (client.checkExists().forPath(targetMataDataPath) == null) {
             // 没有元信息，说明是创建文件。创建元信息
 //            log.info("创建元数据：{}", fileStateInfo.toString());
-            createNodeRecursively(targetMataDataPath, fileStateInfo);
+            createZNodeRecursively(targetMataDataPath, fileStateInfo);
         } else {
             // 修改元信息
 //            log.info("修改元数据：{}", fileStateInfo.toString());
@@ -142,7 +143,7 @@ public class MetaService {
      * 递归地创建元信息
      */
     @SneakyThrows
-    private void createNodeRecursively(String path, StatInfo statInfo) {
+    private void createZNodeRecursively(String path, StatInfo statInfo) {
         String[] parts = path.split("/");
         StringBuilder partialPath = new StringBuilder();
         for (int i = 0; i < parts.length; i++) {
@@ -180,7 +181,7 @@ public class MetaService {
      * @param path 逻辑路径,以/开头
      * @return
      */
-    public StatInfo getFileMetaInfo(String path) {
+    public StatInfo getFileMetaInfoFromZK(String path) {
         String nodeFullPath = PrefixConstants.ZK_PATH_FILE_META_INFO + path;
         byte[] bytes = null;
         try {
@@ -206,7 +207,15 @@ public class MetaService {
             // 存储文件位于dataServer上的真实路径
             realPathMap.put(dataServerInstance, responseEntity.getBody().toString());
         }
-        return updateMetaData(logicPath, dataServerInstanceList, realPathMap);
+
+        return updateMetaDataOnZK(logicPath, dataServerInstanceList, realPathMap);
+        /**
+         * 待完成
+         */
+//        if(Database.create(logicPath,realPathMap)){
+//            ResponseEntity.ok().body("文件创建成功");
+//        }
+//        return ResponseEntity.internalServerError().body("文件创建失败");
     }
 
     /**
@@ -219,7 +228,7 @@ public class MetaService {
      * @return
      */
     @SneakyThrows
-    public ResponseEntity mkdir(String path) {
+    public ResponseEntity mkdirOnZK(String path) {
         String targetMataDataPath = PrefixConstants.ZK_PATH_FILE_META_INFO + path;
         if (client.checkExists().forPath(targetMataDataPath) == null) {
             // 没有元信息，说明是创建文件。创建元信息
@@ -230,7 +239,7 @@ public class MetaService {
                     .isCommitted(true)
                     .size(0L)
                     .build();
-            createNodeRecursively(targetMataDataPath, fileStateInfo);
+            createZNodeRecursively(targetMataDataPath, fileStateInfo);
         } else {
             return ResponseEntity.badRequest().body("文件夹已存在");
         }

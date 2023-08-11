@@ -1,0 +1,72 @@
+{
+    "name": "metaData",
+    "children": {
+        "111": {
+            "name": "111",
+            "children": {
+                "222": {
+                    "name": "222",
+                    "children": {
+                        "d.txt": {
+                            "name": "d.txt",
+                            "path": "metaData/111/222/d.txt",
+                            "size": 0,
+                            "mtime": 0,
+                            "isCommitted": false,
+                            "type": "File"
+                        },
+                        "333": {
+                            "name": "333",
+                            "children": {
+                                "c.txt": {
+                                    "name": "c.txt",
+                                    "path": "metaData/111/222/333/c.txt",
+                                    "size": 0,
+                                    "mtime": 0,
+                                    "isCommitted": false,
+                                    "type": "File"
+                                },
+                                "b.txt": {
+                                    "name": "b.txt",
+                                    "path": "metaData/111/222/333/b.txt",
+                                    "size": 0,
+                                    "mtime": 0,
+                                    "isCommitted": false,
+                                    "type": "File"
+                                }
+                            },
+                            "path": "metaData/111/222/333",
+                            "size": 0,
+                            "mtime": 1691715800727,
+                            "isCommitted": true,
+                            "type": "Directory"
+                        }
+                    },
+                    "path": "metaData/111/222",
+                    "size": 0,
+                    "mtime": 1691715800727,
+                    "isCommitted": true,
+                    "type": "Directory"
+                }
+            },
+            "path": "metaData/111",
+            "size": 0,
+            "mtime": 1691715800727,
+            "isCommitted": true,
+            "type": "Directory"
+        },
+        "a.txt": {
+            "name": "a.txt",
+            "path": "metaData/a.txt",
+            "size": 0,
+            "mtime": 0,
+            "isCommitted": false,
+            "type": "File"
+        }
+    },
+    "path": "metaData",
+    "size": 0,
+    "mtime": 1691715800727,
+    "isCommitted": true,
+    "type": "Directory"
+}

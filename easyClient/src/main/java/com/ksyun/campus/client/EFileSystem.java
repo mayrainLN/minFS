@@ -119,6 +119,7 @@ public class EFileSystem extends FileSystem {
         return httpResponse.getCode() == 200;
     }
 
+    //TODO
     public StatInfo getFileStats(String path) {
         if(!path.startsWith("/")){
             path = "/" + path;
@@ -186,7 +187,6 @@ public class EFileSystem extends FileSystem {
             String slaveDataString = new String(slaveData);
             ClusterInfo.MetaServerMsg slaveDataServerMsg = JSONUtil.toBean(slaveDataString, ClusterInfo.MetaServerMsg.class);
             clusterInfo.setSlaveMetaServer(slaveDataServerMsg);
-
         }
 
         return clusterInfo;

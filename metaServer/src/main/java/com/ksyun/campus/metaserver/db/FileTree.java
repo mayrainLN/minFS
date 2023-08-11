@@ -2,13 +2,11 @@ package com.ksyun.campus.metaserver.db;
 
 import com.ksyun.campus.metaserver.domain.FileType;
 import com.ksyun.campus.metaserver.domain.StatInfo;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author :MayRain
@@ -23,7 +21,7 @@ public class FileTree extends StatInfo {
 
     public static FileTree initDir(String name){
         FileTree dir = new FileTree();
-        dir.setChildren(new HashMap<>());
+        dir.setChildren(new ConcurrentHashMap<>());
         dir.setName(name);
         dir.setCommitted(true);
         dir.setMtime(System.currentTimeMillis());
@@ -44,7 +42,7 @@ public class FileTree extends StatInfo {
     // 文件/目录 名
     private String name;
     // 子文件/目录  key:文件(夹)名
-    private Map<String, FileTree> children;
+    private ConcurrentHashMap<String, FileTree> children;
 
     public String getName() {
         return name;
@@ -54,11 +52,11 @@ public class FileTree extends StatInfo {
         this.name = name;
     }
 
-    public Map<String, FileTree> getChildren() {
+    public ConcurrentHashMap<String, FileTree> getChildren() {
         return children;
     }
 
-    public void setChildren(Map<String, FileTree> children) {
+    public void setChildren(ConcurrentHashMap<String, FileTree> children) {
         this.children = children;
     }
 }

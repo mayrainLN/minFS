@@ -29,9 +29,7 @@ public class ZkUtil {
 
     static {
         int heartbeatTimeoutMs = 30000; // 30秒
-
         initZkClient(heartbeatTimeoutMs);
-
         String masterZNodePath = initReactiveMetaServer();
 
         try {
@@ -42,7 +40,6 @@ public class ZkUtil {
         } catch (Exception e) {
             throw new RuntimeException("监听MetaServer主节点失败");
         }
-
     }
 
     public static CuratorFramework client() {

@@ -34,3 +34,4 @@ build/
 
 ### Mac OS ###
 .DS_Store
+/metaServer/src/main/java/com/ksyun/campus/metaserver/db/wal/
